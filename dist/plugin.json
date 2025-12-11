@@ -1,0 +1,40 @@
+{
+  "type": "app",
+  "name": "Dashboard Exporter",
+  "id": "grafana-dashboard-exporter",
+  "category": "app",
+  "dependencies": {
+    "grafanaVersion": "9.0.0",
+    "plugins": []
+  },
+  "includes": [
+    {
+      "type": "page",
+      "name": "Export Dashboards",
+      "path": "export",
+      "addToNav": true,
+      "defaultNav": true
+    }
+  ],
+  "info": {
+    "description": "Plugin para exportar dashboards do Grafana para repositórios GitHub.",
+    "author": {
+      "name": "Amanda Gusmão",
+      "email": "amanda.gusmao@bradesco.com.br"
+    },
+    "keywords": ["dashboard", "export", "github", "backup"],
+    "links": [
+      {
+        "name": "GitHub",
+        "url": "https://github.com"
+      }
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "screenshots": [],
+    "version": "1.0.0",
+    "updated": "2023-10-27"
+  }
+}
