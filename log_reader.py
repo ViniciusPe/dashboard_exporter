@@ -5,50 +5,55 @@ from datetime import datetime
 from db import save_access, inc_metric
 import subprocess
 
-# =========================
-# REGEX PARA LOGS DO GRAFANA (ARO)
-# =========================
+# ============================================================
+# REGEX BASEADAS NOS LOGS REAIS DO GRAFANA (ARO)
+# ============================================================
 
+# Usuário
 PATTERN_USER = re.compile(r'uname=([^\s]+)')
+
+# UID do dashboard (rota oficial)
 PATTERN_API_UID = re.compile(r'path=/api/dashboards/uid/([a-zA-Z0-9\-_]+)')
+
+# Nome (slug) do dashboard via referer
 PATTERN_REFERER = re.compile(
     r'referer="[^"]*/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^"?/]+)'
 )
 
-# =========================
+# ============================================================
 # CONTROLE DE DUPLICAÇÃO
-# =========================
+# ============================================================
 last_access_time = {}
 DEDUPE_SECONDS = 5
 
 
-def extract_username(log_line):
-    m = PATTERN_USER.search(log_line)
+def extract_username(line):
+    m = PATTERN_USER.search(line)
     return m.group(1) if m else None
 
 
-def extract_dashboard_uid(log_line):
-    m = PATTERN_API_UID.search(log_line)
+def extract_dashboard_uid(line):
+    m = PATTERN_API_UID.search(line)
     if m:
         return m.group(1)
 
-    m2 = PATTERN_REFERER.search(log_line)
+    m2 = PATTERN_REFERER.search(line)
     if m2:
         return m2.group("uid")
 
     return None
 
 
-def extract_dashboard_name(log_line, dashboard_uid):
-    m = PATTERN_REFERER.search(log_line)
+def extract_dashboard_name(line, uid):
+    m = PATTERN_REFERER.search(line)
     if m:
         return m.group("slug")
 
-    return dashboard_uid
+    return uid
 
 
-def should_process_access(username, dashboard_uid):
-    key = f"{username}_{dashboard_uid}"
+def should_process(username, uid):
+    key = f"{username}_{uid}"
     now = time.time()
 
     if key in last_access_time and now - last_access_time[key] < DEDUPE_SECONDS:
@@ -58,62 +63,59 @@ def should_process_access(username, dashboard_uid):
     return True
 
 
-def process_log_line(log_line):
+def process_log_line(line):
     try:
-        if "/api/dashboards/uid/" not in log_line:
+        # Só processa acesso real a dashboard
+        if "/api/dashboards/uid/" not in line:
             return
 
-        username = extract_username(log_line)
-        dashboard_uid = extract_dashboard_uid(log_line)
+        username = extract_username(line)
+        uid = extract_dashboard_uid(line)
 
-        if not username or not dashboard_uid:
+        if not username or not uid:
             return
 
-        if not should_process_access(username, dashboard_uid):
+        if not should_process(username, uid):
             return
 
-        dashboard_name = extract_dashboard_name(log_line, dashboard_uid)
-        accessed_at = datetime.utcnow()
+        dash_name = extract_dashboard_name(line, uid)
+        ts = datetime.utcnow()
 
         print(
             f"🔥 Dashboard acessado → "
-            f"user={username} uid={dashboard_uid} dash={dashboard_name} at={accessed_at}"
+            f"user={username} uid={uid} dash={dash_name} at={ts}"
         )
 
-        save_access(username, dashboard_uid, accessed_at)
-        inc_metric(dashboard_uid, dashboard_name)
+        save_access(username, uid, ts)
+        inc_metric(uid, dash_name)
 
     except Exception as e:
         print(f"🔥 Erro ao processar log: {e}")
 
 
-def resolve_k8s_cli():
-    """
-    Resolve qual CLI está disponível no container.
-    Prioridade: oc > kubectl
-    """
-    if shutil.which("oc"):
-        return "oc"
+def resolve_cli():
     if shutil.which("kubectl"):
         return "kubectl"
+    if shutil.which("oc"):
+        return "oc"
     return None
 
 
 def read_logs():
-    print("📡 Iniciando monitor de logs do Grafana...")
+    print("📡 Iniciando captura de logs do Grafana...")
 
-    cli = resolve_k8s_cli()
+    cli = resolve_cli()
     if not cli:
-        print("❌ ERRO CRÍTICO: nem 'oc' nem 'kubectl' estão disponíveis no container.")
-        print("❌ Não é possível ler logs do Grafana.")
+        print("❌ ERRO: nem kubectl nem oc existem no container")
         return
 
     print(f"✅ Usando CLI: {cli}")
 
+    # >>> ESTE COMANDO É IDÊNTICO AO QUE VOCÊ TESTOU MANUALMENTE <<<
     cmd = [
         cli, "logs",
         "-n", "nm-observ",
-        "-l", "app.kubernetes.io/instance=lgtm-deploy",
+        "-l", "app.kubernetes.io/name=grafana",
         "-c", "grafana",
         "-f",
         "--tail=0"
@@ -133,9 +135,9 @@ def read_logs():
             process_log_line(line)
 
 
-# =========================
+# ============================================================
 # ENTRY POINT ESPERADO PELO app.py
-# =========================
+# ============================================================
 def start_log_monitor():
     read_logs()
 
