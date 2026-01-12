@@ -12,12 +12,19 @@ import subprocess
 # Usuário
 PATTERN_USER = re.compile(r'uname=([^\s]+)')
 
-# UID do dashboard (rota oficial)
-PATTERN_API_UID = re.compile(r'path=/api/dashboards/uid/([a-zA-Z0-9\-_]+)')
+# Dashboard via path=/d/<uid>/<slug>
+PATTERN_PATH_DASH = re.compile(
+    r'path=/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^\s/?]+)'
+)
 
-# Nome (slug) do dashboard via referer
+# Dashboard via API
+PATTERN_API_UID = re.compile(
+    r'path=/api/dashboards/uid/(?P<uid>[a-zA-Z0-9\-_]+)'
+)
+
+# Dashboard via referer
 PATTERN_REFERER = re.compile(
-    r'referer="[^"]*/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^"?/]+)'
+    r'referer="[^"]*/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^\s"?/]+)'
 )
 
 # ============================================================
@@ -33,22 +40,36 @@ def extract_username(line):
 
 
 def extract_dashboard_uid(line):
-    m = PATTERN_API_UID.search(line)
+    # Prioridade 1: path=/d/<uid>/<slug>
+    m = PATTERN_PATH_DASH.search(line)
     if m:
-        return m.group(1)
+        return m.group("uid")
 
-    m2 = PATTERN_REFERER.search(line)
+    # Prioridade 2: API
+    m2 = PATTERN_API_UID.search(line)
     if m2:
         return m2.group("uid")
+
+    # Prioridade 3: referer
+    m3 = PATTERN_REFERER.search(line)
+    if m3:
+        return m3.group("uid")
 
     return None
 
 
 def extract_dashboard_name(line, uid):
-    m = PATTERN_REFERER.search(line)
+    # Prioridade 1: path=/d/<uid>/<slug>
+    m = PATTERN_PATH_DASH.search(line)
     if m:
         return m.group("slug")
 
+    # Prioridade 2: referer
+    m2 = PATTERN_REFERER.search(line)
+    if m2:
+        return m2.group("slug")
+
+    # Fallback seguro
     return uid
 
 
@@ -66,7 +87,7 @@ def should_process(username, uid):
 def process_log_line(line):
     try:
         # Só processa acesso real a dashboard
-        if "/api/dashboards/uid/" not in line:
+        if "/d/" not in line and "/api/dashboards/uid/" not in line:
             return
 
         username = extract_username(line)
@@ -83,7 +104,7 @@ def process_log_line(line):
 
         print(
             f"🔥 Dashboard acessado → "
-            f"user={username} uid={uid} dash={dash_name} at={ts}"
+            f"user={username} uid={uid} dash={dash_name}"
         )
 
         save_access(username, uid, ts)
@@ -111,7 +132,7 @@ def read_logs():
 
     print(f"✅ Usando CLI: {cli}")
 
-    # >>> ESTE COMANDO É IDÊNTICO AO QUE VOCÊ TESTOU MANUALMENTE <<<
+    # COMANDO IDÊNTICO AO TESTADO MANUALMENTE
     cmd = [
         cli, "logs",
         "-n", "nm-observ",
