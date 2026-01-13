@@ -1,11 +1,14 @@
 from flask import Flask, jsonify
 from metrics import metrics_handler
 from log_reader import start_log_monitor
-from db import get_dashboards_last_access_simple, init_db_pool
+from db import (
+    get_dashboards_last_access_simple,
+    get_dashboards_users_view,
+    init_db_pool
+)
 import threading
 import time
 from datetime import datetime
-import os
 
 app = Flask(__name__)
 
@@ -35,20 +38,31 @@ def dashboards_last_access():
         print(f"🔥 Erro: {e}")
         return jsonify([])
 
+# ✅ NOVO ENDPOINT — DASHBOARD x USUÁRIO
+@app.route("/api/dashboards/users_dashs_view")
+def dashboards_users_dashs_view():
+    """Endpoint por dashboard x usuário"""
+    try:
+        data = get_dashboards_users_view(limit=200)
+        return jsonify(data)
+    except Exception as e:
+        print(f"🔥 Erro users_dashs_view: {e}")
+        return jsonify([])
+
 @app.route("/health")
 def health():
     """Health check que verifica conexão com DB"""
     from db import get_conn, return_conn
-    
+
     try:
         conn = get_conn()
         with conn.cursor() as cur:
             cur.execute("SELECT 1 as status")
             result = cur.fetchone()
         return_conn(conn)
-        
+
         db_status = "healthy" if result and result[0] == 1 else "unhealthy"
-        
+
         return jsonify({
             "status": "healthy",
             "database": db_status,
@@ -56,7 +70,7 @@ def health():
             "timestamp": datetime.now().isoformat(),
             "mode": "kubernetes-sidecar-persistent"
         })
-        
+
     except Exception as e:
         return jsonify({
             "status": "unhealthy",
@@ -69,7 +83,7 @@ def health():
 def debug_db():
     """Endpoint de debug para verificar banco"""
     from db import get_conn, return_conn
-    
+
     try:
         conn = get_conn()
         with conn.cursor() as cur:
@@ -77,30 +91,32 @@ def debug_db():
                 SELECT 'access_logs' as table, COUNT(*) as count FROM dashboard_access_logs
                 UNION ALL
                 SELECT 'usage_metrics' as table, COUNT(*) as count FROM dashboard_usage_metrics
+                UNION ALL
+                SELECT 'user_usage' as table, COUNT(*) as count FROM dashboard_user_usage
             """)
             results = cur.fetchall()
         return_conn(conn)
-        
+
         return jsonify({
             "tables": [{"table": r[0], "count": r[1]} for r in results],
             "timestamp": datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 def start_background_monitor():
-    """Inicia o monitor de logs em background com retry"""
+    """Inicia o monitor de logs em background"""
     try:
         print("🚀 Iniciando monitor de logs do Grafana em 3 segundos...")
-        time.sleep(3)  # Espera o Flask iniciar
+        time.sleep(3)
         start_log_monitor()
     except Exception as e:
         print(f"🔥 ERRO CRÍTICO no monitor: {e}")
         import traceback
         traceback.print_exc()
 
-# INICIA O MONITOR ASSIM QUE O MÓDULO CARREGAR
+# Inicia monitor em background
 monitor_thread = threading.Thread(target=start_background_monitor, daemon=True)
 monitor_thread.start()
 print("✅ Thread do monitor iniciada em background")
@@ -108,9 +124,10 @@ print("✅ Thread do monitor iniciada em background")
 if __name__ == "__main__":
     print("✅ Backend sidecar iniciado com persistência!")
     print("📡 Endpoints disponíveis:")
-    print("   - http://0.0.0.0:9109/metrics")
-    print("   - http://0.0.0.0:9109/api/dashboards/last-access")
-    print("   - http://0.0.0.0:9109/health")
-    print("   - http://0.0.0.0:9109/debug/db")
-    
+    print("   - /metrics")
+    print("   - /api/dashboards/last-access")
+    print("   - /api/dashboards/users_dashs_view")
+    print("   - /health")
+    print("   - /debug/db")
+
     app.run(host="0.0.0.0", port=9109)
