@@ -2,7 +2,6 @@ import os
 import psycopg2
 import traceback
 import time
-from datetime import datetime, timezone
 from psycopg2 import pool
 
 # Pool de conexões
@@ -108,7 +107,7 @@ def create_tables():
         return_conn(conn)
 
 
-# ================= EXISTENTE (NÃO QUEBRAR) =================
+# ================= EXISTENTE =================
 
 def save_access(username, dashboard_uid, ts):
     conn = get_conn()
@@ -144,7 +143,7 @@ def inc_metric(dashboard_uid, dashboard_name):
         return_conn(conn)
 
 
-# ================= NOVO (ÚNICA ADIÇÃO REAL) =================
+# ================= NOVO — GRAVA =================
 
 def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
     conn = get_conn()
@@ -169,3 +168,46 @@ def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
         conn.commit()
     finally:
         return_conn(conn)
+
+
+# ================= NOVO — LÊ =================
+
+def get_dashboards_users_view(limit=200):
+    try:
+        conn = get_conn()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    dashboard_uid,
+                    dashboard_name,
+                    username,
+                    access_count,
+                    last_access
+                FROM dashboard_user_usage
+                ORDER BY last_access DESC
+                LIMIT %s;
+            """, (limit,))
+            rows = cur.fetchall()
+
+        result = []
+        for uid, name, user, views, last_access in rows:
+            iso_date = last_access.isoformat() + "Z" if last_access else None
+            result.append({
+                "UID": uid,
+                "Dashboard": name,
+                "User": user,
+                "Views": int(views),
+                "Last Access": iso_date,
+                "Time": iso_date
+            })
+
+        return result
+
+    except Exception as e:
+        print(f"🔥 Erro ao buscar dashboards por usuário: {e}")
+        traceback.print_exc()
+        return []
+
+    finally:
+        if 'conn' in locals():
+            return_conn(conn)
