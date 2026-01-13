@@ -1,12 +1,16 @@
 import os
 import psycopg2
-import traceback
 import time
+import traceback
+from datetime import datetime
 from psycopg2 import pool
 
 connection_pool = None
 
 
+# =========================
+# POOL
+# =========================
 def init_db_pool():
     global connection_pool
     connection_pool = psycopg2.pool.SimpleConnectionPool(
@@ -17,24 +21,13 @@ def init_db_pool():
         password=os.getenv("DB_PASSWORD", "CHANGE_ME"),
         connect_timeout=5
     )
-    test_and_init_db()
+    print("✅ Pool PostgreSQL inicializado")
 
 
 def get_conn():
-    global connection_pool
     if connection_pool is None:
         init_db_pool()
-
-    for _ in range(3):
-        try:
-            conn = connection_pool.getconn()
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
-            return conn
-        except:
-            time.sleep(1)
-
-    raise Exception("DB connection failed")
+    return connection_pool.getconn()
 
 
 def return_conn(conn):
@@ -44,53 +37,9 @@ def return_conn(conn):
         pass
 
 
-def test_and_init_db():
-    conn = get_conn()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_name = 'dashboard_access_logs'
-                );
-            """)
-            exists = cur.fetchone()[0]
-
-        if not exists:
-            create_tables()
-    finally:
-        return_conn(conn)
-
-
-def create_tables():
-    conn = get_conn()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS dashboard_access_logs (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(255),
-                    dashboard_uid VARCHAR(255),
-                    accessed_at TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT NOW()
-                );
-            """)
-
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS dashboard_usage_metrics (
-                    dashboard_uid VARCHAR(255) PRIMARY KEY,
-                    views INTEGER DEFAULT 0,
-                    last_access TIMESTAMP,
-                    dashboard_name VARCHAR(255),
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW()
-                );
-            """)
-        conn.commit()
-    finally:
-        return_conn(conn)
-
-
+# =========================
+# WRITE
+# =========================
 def save_access(username, dashboard_uid, ts):
     conn = get_conn()
     try:
@@ -131,11 +80,7 @@ def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO dashboard_user_usage (
-                    dashboard_uid,
-                    dashboard_name,
-                    username,
-                    access_count,
-                    last_access
+                    dashboard_uid, dashboard_name, username, access_count, last_access
                 )
                 VALUES (%s, %s, %s, 1, %s)
                 ON CONFLICT (dashboard_uid, username)
@@ -150,20 +95,43 @@ def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
         return_conn(conn)
 
 
-def get_dashboards_last_access_simple(limit=50):
+# =========================
+# READ — DASHBOARDS
+# =========================
+def _parse_range(from_ts, to_ts):
+    if not from_ts or not to_ts:
+        return None, None
+    return (
+        datetime.utcfromtimestamp(int(from_ts) / 1000),
+        datetime.utcfromtimestamp(int(to_ts) / 1000),
+    )
+
+
+def get_dashboards_last_access_simple(limit=50, from_ts=None, to_ts=None):
     conn = get_conn()
     try:
+        from_dt, to_dt = _parse_range(from_ts, to_ts)
+
+        query = """
+            SELECT
+                COALESCE(NULLIF(dashboard_name, ''), dashboard_uid),
+                last_access,
+                views,
+                dashboard_uid
+            FROM dashboard_usage_metrics
+            WHERE last_access IS NOT NULL
+        """
+
+        params = []
+        if from_dt and to_dt:
+            query += " AND last_access BETWEEN %s AND %s"
+            params.extend([from_dt, to_dt])
+
+        query += " ORDER BY last_access DESC LIMIT %s"
+        params.append(limit)
+
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    COALESCE(NULLIF(dashboard_name, ''), dashboard_uid),
-                    last_access,
-                    views,
-                    dashboard_uid
-                FROM dashboard_usage_metrics
-                ORDER BY last_access DESC
-                LIMIT %s;
-            """, (limit,))
+            cur.execute(query, params)
             rows = cur.fetchall()
 
         result = []
@@ -171,26 +139,39 @@ def get_dashboards_last_access_simple(limit=50):
             iso = last_access.isoformat() + "Z"
             result.append({
                 "Dashboard": name,
-                "Last Access": iso,
-                "Views": views,
+                "Views": int(views),
                 "UID": uid,
+                "Last Access": iso,
                 "Time": iso
             })
+
         return result
+
     finally:
         return_conn(conn)
 
 
-def get_dashboards_users_view(limit=200):
+def get_dashboards_users_view(limit=200, from_ts=None, to_ts=None):
     conn = get_conn()
     try:
+        from_dt, to_dt = _parse_range(from_ts, to_ts)
+
+        query = """
+            SELECT dashboard_uid, dashboard_name, username, access_count, last_access
+            FROM dashboard_user_usage
+            WHERE last_access IS NOT NULL
+        """
+
+        params = []
+        if from_dt and to_dt:
+            query += " AND last_access BETWEEN %s AND %s"
+            params.extend([from_dt, to_dt])
+
+        query += " ORDER BY last_access DESC LIMIT %s"
+        params.append(limit)
+
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT dashboard_uid, dashboard_name, username, access_count, last_access
-                FROM dashboard_user_usage
-                ORDER BY last_access DESC
-                LIMIT %s;
-            """, (limit,))
+            cur.execute(query, params)
             rows = cur.fetchall()
 
         result = []
@@ -200,10 +181,12 @@ def get_dashboards_users_view(limit=200):
                 "UID": uid,
                 "Dashboard": name,
                 "User": user,
-                "Views": views,
+                "Views": int(views),
                 "Last Access": iso,
                 "Time": iso
             })
+
         return result
+
     finally:
         return_conn(conn)
