@@ -4,30 +4,20 @@ import traceback
 import time
 from psycopg2 import pool
 
-# Pool de conexões
 connection_pool = None
 
 
-# =========================
-# INIT / POOL
-# =========================
-
 def init_db_pool():
     global connection_pool
-    try:
-        connection_pool = psycopg2.pool.SimpleConnectionPool(
-            1, 10,
-            host=os.getenv('DB_HOST', 'tracker-postgres'),
-            dbname=os.getenv('DB_NAME', 'tracker'),
-            user=os.getenv('DB_USER', 'tracker_user'),
-            password=os.getenv('DB_PASSWORD', 'CHANGE_ME'),
-            connect_timeout=5
-        )
-        print("✅ Pool de conexões PostgreSQL inicializado")
-        test_and_init_db()
-    except Exception as e:
-        print(f"🔥 Erro ao criar pool: {e}")
-        connection_pool = None
+    connection_pool = psycopg2.pool.SimpleConnectionPool(
+        1, 10,
+        host=os.getenv("DB_HOST", "tracker-postgres"),
+        dbname=os.getenv("DB_NAME", "tracker"),
+        user=os.getenv("DB_USER", "tracker_user"),
+        password=os.getenv("DB_PASSWORD", "CHANGE_ME"),
+        connect_timeout=5
+    )
+    test_and_init_db()
 
 
 def get_conn():
@@ -35,17 +25,16 @@ def get_conn():
     if connection_pool is None:
         init_db_pool()
 
-    for attempt in range(3):
+    for _ in range(3):
         try:
             conn = connection_pool.getconn()
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
             return conn
-        except Exception as e:
-            print(f"⚠️ Tentativa {attempt + 1}/3: {e}")
-            time.sleep(2 ** attempt)
+        except:
+            time.sleep(1)
 
-    raise Exception("❌ Não foi possível obter conexão com o banco")
+    raise Exception("DB connection failed")
 
 
 def return_conn(conn):
@@ -54,10 +43,6 @@ def return_conn(conn):
     except:
         pass
 
-
-# =========================
-# INIT TABLES
-# =========================
 
 def test_and_init_db():
     conn = get_conn()
@@ -72,11 +57,7 @@ def test_and_init_db():
             exists = cur.fetchone()[0]
 
         if not exists:
-            print("📦 Criando tabelas no banco...")
             create_tables()
-        else:
-            print("✅ Tabelas já existem no banco")
-
     finally:
         return_conn(conn)
 
@@ -85,7 +66,6 @@ def create_tables():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            # Logs brutos
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS dashboard_access_logs (
                     id SERIAL PRIMARY KEY,
@@ -96,7 +76,6 @@ def create_tables():
                 );
             """)
 
-            # Métrica agregada por dashboard
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS dashboard_usage_metrics (
                     dashboard_uid VARCHAR(255) PRIMARY KEY,
@@ -107,19 +86,10 @@ def create_tables():
                     updated_at TIMESTAMP DEFAULT NOW()
                 );
             """)
-
         conn.commit()
-
-    except:
-        conn.rollback()
-        raise
     finally:
         return_conn(conn)
 
-
-# =========================
-# WRITE — EXISTENTE
-# =========================
 
 def save_access(username, dashboard_uid, ts):
     conn = get_conn()
@@ -135,7 +105,7 @@ def save_access(username, dashboard_uid, ts):
 
 
 def inc_metric(dashboard_uid, dashboard_name):
-    if not dashboard_name or dashboard_name == 'N/A':
+    if not dashboard_name:
         dashboard_name = dashboard_uid
 
     conn = get_conn()
@@ -154,10 +124,6 @@ def inc_metric(dashboard_uid, dashboard_name):
     finally:
         return_conn(conn)
 
-
-# =========================
-# WRITE — NOVO (USER x DASH)
-# =========================
 
 def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
     conn = get_conn()
@@ -184,23 +150,17 @@ def inc_user_dashboard_metric(dashboard_uid, dashboard_name, username, ts):
         return_conn(conn)
 
 
-# =========================
-# READ — DASHBOARDS (GERAL)
-# =========================
-
 def get_dashboards_last_access_simple(limit=50):
-    """Usado pelo endpoint /api/dashboards/last-access"""
+    conn = get_conn()
     try:
-        conn = get_conn()
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT
-                    COALESCE(NULLIF(dashboard_name, ''), dashboard_uid) AS name,
+                    COALESCE(NULLIF(dashboard_name, ''), dashboard_uid),
                     last_access,
                     views,
                     dashboard_uid
                 FROM dashboard_usage_metrics
-                WHERE last_access IS NOT NULL
                 ORDER BY last_access DESC
                 LIMIT %s;
             """, (limit,))
@@ -208,46 +168,25 @@ def get_dashboards_last_access_simple(limit=50):
 
         result = []
         for name, last_access, views, uid in rows:
-            iso_date = last_access.isoformat() + "Z" if last_access else None
-            human_date = last_access.strftime("%Y-%m-%d %H:%M:%S") if last_access else None
-
+            iso = last_access.isoformat() + "Z"
             result.append({
                 "Dashboard": name,
-                "Last Access": iso_date,
-                "Last Access Human": human_date,
-                "Views": int(views),
+                "Last Access": iso,
+                "Views": views,
                 "UID": uid,
-                "Time": iso_date
+                "Time": iso
             })
-
         return result
-
-    except Exception as e:
-        print(f"🔥 Erro ao buscar dashboards: {e}")
-        traceback.print_exc()
-        return []
-
     finally:
-        if 'conn' in locals():
-            return_conn(conn)
+        return_conn(conn)
 
-
-# =========================
-# READ — DASHBOARD x USER
-# =========================
 
 def get_dashboards_users_view(limit=200):
-    """Usado pelo endpoint /api/dashboards/users_dashs_view"""
+    conn = get_conn()
     try:
-        conn = get_conn()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT
-                    dashboard_uid,
-                    dashboard_name,
-                    username,
-                    access_count,
-                    last_access
+                SELECT dashboard_uid, dashboard_name, username, access_count, last_access
                 FROM dashboard_user_usage
                 ORDER BY last_access DESC
                 LIMIT %s;
@@ -256,24 +195,15 @@ def get_dashboards_users_view(limit=200):
 
         result = []
         for uid, name, user, views, last_access in rows:
-            iso_date = last_access.isoformat() + "Z" if last_access else None
-
+            iso = last_access.isoformat() + "Z"
             result.append({
                 "UID": uid,
                 "Dashboard": name,
                 "User": user,
-                "Views": int(views),
-                "Last Access": iso_date,
-                "Time": iso_date
+                "Views": views,
+                "Last Access": iso,
+                "Time": iso
             })
-
         return result
-
-    except Exception as e:
-        print(f"🔥 Erro ao buscar dashboards por usuário: {e}")
-        traceback.print_exc()
-        return []
-
     finally:
-        if 'conn' in locals():
-            return_conn(conn)
+        return_conn(conn)
