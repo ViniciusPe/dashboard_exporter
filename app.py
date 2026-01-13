@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from metrics import metrics_handler
 from log_reader import start_log_monitor
 from database import (
@@ -12,15 +12,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# =========================
-# INIT DB
-# =========================
 print("🔧 Inicializando pool de conexões PostgreSQL...")
 init_db_pool()
 
-# =========================
-# CORS
-# =========================
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -28,28 +22,47 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
     return response
 
-# =========================
-# ENDPOINTS
-# =========================
+
 @app.route("/metrics")
 def metrics():
     return metrics_handler()
 
+
 @app.route("/api/dashboards/last-access")
 def dashboards_last_access():
     try:
-        return jsonify(get_dashboards_last_access_simple(limit=50))
+        from_ts = request.args.get("from")
+        to_ts = request.args.get("to")
+
+        return jsonify(
+            get_dashboards_last_access_simple(
+                limit=50,
+                from_ts=from_ts,
+                to_ts=to_ts
+            )
+        )
     except Exception as e:
         print(f"🔥 Erro last-access: {e}")
         return jsonify([])
 
+
 @app.route("/api/dashboards/users_dashs_view")
 def dashboards_users_view():
     try:
-        return jsonify(get_dashboards_users_view(limit=200))
+        from_ts = request.args.get("from")
+        to_ts = request.args.get("to")
+
+        return jsonify(
+            get_dashboards_users_view(
+                limit=200,
+                from_ts=from_ts,
+                to_ts=to_ts
+            )
+        )
     except Exception as e:
         print(f"🔥 Erro users_dashs_view: {e}")
         return jsonify([])
+
 
 @app.route("/health")
 def health():
@@ -66,10 +79,8 @@ def health():
             "timestamp": datetime.utcnow().isoformat()
         })
     except Exception as e:
-        return jsonify({
-            "status": "unhealthy",
-            "error": str(e)
-        }), 500
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
 
 @app.route("/debug/db")
 def debug_db():
@@ -93,9 +104,7 @@ def debug_db():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# =========================
-# LOG MONITOR THREAD
-# =========================
+
 def start_background_monitor():
     try:
         print("🚀 Iniciando monitor de logs em 3 segundos...")
@@ -106,6 +115,7 @@ def start_background_monitor():
         import traceback
         traceback.print_exc()
 
+
 threading.Thread(
     target=start_background_monitor,
     daemon=True
@@ -114,11 +124,4 @@ threading.Thread(
 print("✅ Thread do monitor iniciada")
 
 if __name__ == "__main__":
-    print("📡 Endpoints ativos:")
-    print(" - /metrics")
-    print(" - /api/dashboards/last-access")
-    print(" - /api/dashboards/users_dashs_view")
-    print(" - /health")
-    print(" - /debug/db")
-
     app.run(host="0.0.0.0", port=9109)
