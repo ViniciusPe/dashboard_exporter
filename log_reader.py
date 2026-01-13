@@ -2,16 +2,16 @@ import re
 import time
 import shutil
 from datetime import datetime
-from db import (
+from database import (
     save_access,
     inc_metric,
     inc_user_dashboard_metric
 )
 import subprocess
 
-# ============================================================
+# =========================
 # REGEX
-# ============================================================
+# =========================
 PATTERN_USER = re.compile(r'uname=([^\s]+)')
 
 PATTERN_PATH_DASH = re.compile(
@@ -29,27 +29,26 @@ PATTERN_REFERER = re.compile(
 last_access_time = {}
 DEDUPE_SECONDS = 5
 
-
+# =========================
+# EXTRACTORS
+# =========================
 def extract_username(line):
     m = PATTERN_USER.search(line)
     return m.group(1) if m else None
 
-
 def extract_dashboard_uid(line):
-    for pattern in (PATTERN_PATH_DASH, PATTERN_API_UID, PATTERN_REFERER):
-        m = pattern.search(line)
+    for p in (PATTERN_PATH_DASH, PATTERN_API_UID, PATTERN_REFERER):
+        m = p.search(line)
         if m:
             return m.group("uid")
     return None
 
-
 def extract_dashboard_name(line, uid):
-    for pattern in (PATTERN_PATH_DASH, PATTERN_REFERER):
-        m = pattern.search(line)
+    for p in (PATTERN_PATH_DASH, PATTERN_REFERER):
+        m = p.search(line)
         if m:
             return m.group("slug")
     return uid
-
 
 def should_process(username, uid):
     key = f"{username}_{uid}"
@@ -59,7 +58,9 @@ def should_process(username, uid):
     last_access_time[key] = now
     return True
 
-
+# =========================
+# LOG PROCESSOR
+# =========================
 def process_log_line(line):
     if "/d/" not in line and "/api/dashboards/uid/" not in line:
         return
@@ -76,20 +77,21 @@ def process_log_line(line):
     dash_name = extract_dashboard_name(line, uid)
     ts = datetime.utcnow()
 
-    print(f"🔥 Dashboard acessado → user={username} uid={uid} dash={dash_name}")
+    print(f"🔥 Dashboard acessado → {username} | {dash_name} ({uid})")
 
     save_access(username, uid, ts)
     inc_metric(uid, dash_name)
     inc_user_dashboard_metric(uid, dash_name, username, ts)
 
-
+# =========================
+# LOG STREAM
+# =========================
 def resolve_cli():
     if shutil.which("kubectl"):
         return "kubectl"
     if shutil.which("oc"):
         return "oc"
     return None
-
 
 def read_logs():
     print("📡 Monitorando logs do Grafana...")
@@ -117,14 +119,11 @@ def read_logs():
     )
 
     for line in iter(proc.stdout.readline, ""):
-        line = line.strip()
         if line:
-            process_log_line(line)
-
+            process_log_line(line.strip())
 
 def start_log_monitor():
     read_logs()
-
 
 if __name__ == "__main__":
     start_log_monitor()
