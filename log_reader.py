@@ -1,9 +1,10 @@
 import re
 import time
 import shutil
-from datetime import datetime
 import subprocess
-from database import (
+from datetime import datetime
+
+from db import (
     save_access,
     inc_metric,
     inc_user_dashboard_metric
@@ -13,31 +14,33 @@ from database import (
 # REGEX
 # ============================================================
 
-# Usuário autenticado
 PATTERN_USER = re.compile(r'uname=([^\s]+)')
 
-# Dashboard acessado DIRETAMENTE (quando existir)
+# /d/<uid>/<slug>
 PATTERN_PATH_DASH = re.compile(
     r'path=/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^\s/?]+)'
 )
 
-# Dashboard acessado via API
+# /api/dashboards/uid/<uid>
 PATTERN_API_UID = re.compile(
     r'path=/api/dashboards/uid/(?P<uid>[a-zA-Z0-9\-_]+)'
 )
 
-# Dashboard acessado VIA REFERER (SEU CASO REAL)
+# referer="/d/<uid>/<slug>"
 PATTERN_REFERER = re.compile(
     r'referer="[^"]*/d/(?P<uid>[a-zA-Z0-9\-_]+)/(?P<slug>[^\s"?/]+)'
 )
 
-# Deduplicação
+# ============================================================
+# DEDUPE
+# ============================================================
+
 last_access_time = {}
 DEDUPE_SECONDS = 5
 
 
 # ============================================================
-# EXTRACTORS
+# EXTRAÇÃO
 # ============================================================
 
 def extract_username(line):
@@ -65,26 +68,21 @@ def should_process(username, uid):
     key = f"{username}_{uid}"
     now = time.time()
 
-    if key in last_access_time and now - last_access_time[key] < DEDUPE_SECONDS:
-        return False
+    if key in last_access_time:
+        if now - last_access_time[key] < DEDUPE_SECONDS:
+            return False
 
     last_access_time[key] = now
     return True
 
 
 # ============================================================
-# PROCESSAMENTO DO LOG
+# PROCESSAMENTO
 # ============================================================
 
 def process_log_line(line):
-    """
-    IMPORTANTE:
-    No seu Grafana, o acesso ao dashboard aparece NO REFERER,
-    não no path principal.
-    """
-
-    # 🔴 FILTRO CORRETO (ESSA ERA A FALHA)
-    if "referer=" not in line or "/d/" not in line:
+    # Só interessa dashboard
+    if "/d/" not in line and "/api/dashboards/uid/" not in line:
         return
 
     username = extract_username(line)
@@ -96,15 +94,14 @@ def process_log_line(line):
     if not should_process(username, uid):
         return
 
-    dash_name = extract_dashboard_name(line, uid)
+    dashboard_name = extract_dashboard_name(line, uid)
     ts = datetime.utcnow()
 
-    print(f"🔥 Dashboard acessado → user={username} uid={uid} dash={dash_name}")
+    print(f"🔥 Dashboard acessado → user={username} uid={uid} dash={dashboard_name}")
 
-    # Escrita no banco
     save_access(username, uid, ts)
-    inc_metric(uid, dash_name)
-    inc_user_dashboard_metric(uid, dash_name, username, ts)
+    inc_metric(uid, dashboard_name)
+    inc_user_dashboard_metric(uid, dashboard_name, username, ts)
 
 
 # ============================================================
@@ -120,12 +117,13 @@ def resolve_cli():
 
 
 def read_logs():
-    print("📡 Monitorando logs do Grafana...")
-
     cli = resolve_cli()
     if not cli:
         print("❌ kubectl/oc não encontrado no container")
+        time.sleep(5)
         return
+
+    print("📡 Conectando aos logs do Grafana...")
 
     cmd = [
         cli, "logs",
@@ -145,13 +143,34 @@ def read_logs():
     )
 
     for line in iter(proc.stdout.readline, ""):
+        line = line.strip()
         if line:
-            process_log_line(line.strip())
+            process_log_line(line)
 
+    # Se sair do loop, o stream morreu
+    print("⚠️ Stream de logs finalizado")
+
+
+# ============================================================
+# MONITOR COM RECONEXÃO
+# ============================================================
 
 def start_log_monitor():
-    read_logs()
+    print("🚀 Iniciando monitor de logs (com auto-reconnect)")
 
+    while True:
+        try:
+            read_logs()
+        except Exception as e:
+            print(f"🔥 ERRO no log reader, reiniciando stream: {e}")
+
+        # Evita loop agressivo
+        time.sleep(2)
+
+
+# ============================================================
+# EXECUÇÃO DIRETA
+# ============================================================
 
 if __name__ == "__main__":
     start_log_monitor()
