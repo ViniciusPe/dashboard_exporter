@@ -1,0 +1,861 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Dashboard profissional para monitoramento de clusters Ceph via OpenTelemetry. Agrupado por: Visão Geral, Capacidade, OSD/PG, Pools, MON, MDS, RGW, RBD, BlueStore/BlueFS e RocksDB.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "liveNow": false,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ceph", "storage", "otel"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_PROM",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "definition": "label_values(ceph_health_status, k8s_cluster_name)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Cluster (k8s_cluster_name)",
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": { "query": "label_values(ceph_health_status, k8s_cluster_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Ceph Cluster Overview (OTel)",
+  "uid": "ceph-otel-overview",
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "type": "row",
+      "id": 100,
+      "title": "Visão Geral do Cluster",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 1,
+      "title": "Status de Saúde",
+      "description": "Estado de saúde geral do cluster. 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "targets": [
+        { "expr": "max(ceph_health_status{k8s_cluster_name=\"$cluster\"})", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "HEALTH_OK", "color": "green", "index": 0 } } },
+            { "type": "value", "options": { "1": { "text": "HEALTH_WARN", "color": "yellow", "index": 1 } } },
+            { "type": "value", "options": { "2": { "text": "HEALTH_ERR", "color": "red", "index": 2 } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "OSDs UP / Total",
+      "description": "Quantidade de OSDs no estado UP versus o total conhecido pelo cluster.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "targets": [
+        { "expr": "sum(ceph_osd_up{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "UP" },
+        { "expr": "count(ceph_osd_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "Total" }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "type": "stat",
+      "id": 3,
+      "title": "OSDs IN",
+      "description": "Número de OSDs marcados como IN (participando do cluster).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "targets": [{ "expr": "sum(ceph_osd_in{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "stat",
+      "id": 4,
+      "title": "MONs em Quórum",
+      "description": "Quantidade de monitores (MON) participando do quórum.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "targets": [{ "expr": "sum(ceph_mon_quorum_status{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "stat",
+      "id": 5,
+      "title": "PGs Ativos",
+      "description": "Placement Groups em estado ativo.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "targets": [{ "expr": "sum(ceph_pg_active{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "stat",
+      "id": 6,
+      "title": "Slow Ops",
+      "description": "Operações lentas detectadas pelo healthcheck do Ceph.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "targets": [{ "expr": "sum(ceph_healthcheck_slow_ops{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 10 }
+          ]},
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background" }
+    },
+
+    { "type": "row", "id": 101, "title": "Capacidade", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "collapsed": false, "panels": [] },
+    {
+      "type": "gauge",
+      "id": 10,
+      "title": "Uso Total do Cluster",
+      "description": "Percentual utilizado em relação à capacidade total bruta do cluster.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 6 },
+      "targets": [
+        { "expr": "sum(ceph_cluster_total_used_bytes{k8s_cluster_name=\"$cluster\"}) / sum(ceph_cluster_total_bytes{k8s_cluster_name=\"$cluster\"}) * 100", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "orange", "value": 80 },
+            { "color": "red", "value": 90 }
+          ]}
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 11,
+      "title": "Capacidade Total",
+      "description": "Capacidade bruta total do cluster.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 3, "w": 6, "x": 6, "y": 6 },
+      "targets": [{ "expr": "sum(ceph_cluster_total_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "type": "stat",
+      "id": 12,
+      "title": "Usado (Bruto)",
+      "description": "Total bruto utilizado considerando replicação/EC.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 3, "w": 6, "x": 12, "y": 6 },
+      "targets": [{ "expr": "sum(ceph_cluster_total_used_raw_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "type": "stat",
+      "id": 13,
+      "title": "Usado (Lógico)",
+      "description": "Total lógico utilizado (dados do usuário sem considerar replicação).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 3, "w": 6, "x": 18, "y": 6 },
+      "targets": [{ "expr": "sum(ceph_cluster_total_used_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 14,
+      "title": "Crescimento de Capacidade",
+      "description": "Evolução temporal de capacidade total e uso do cluster.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 9 },
+      "targets": [
+        { "expr": "sum(ceph_cluster_total_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "Total" },
+        { "expr": "sum(ceph_cluster_total_used_raw_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "Usado (bruto)" },
+        { "expr": "sum(ceph_cluster_total_used_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "Usado (lógico)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+    {
+      "type": "piechart",
+      "id": 15,
+      "title": "Capacidade por Device Class",
+      "description": "Distribuição de capacidade total por classe de dispositivo (hdd/ssd/nvme).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 13 },
+      "targets": [
+        { "expr": "sum by (device_class) (ceph_cluster_by_class_total_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "{{device_class}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "pieType": "donut" }
+    },
+
+    { "type": "row", "id": 102, "title": "Placement Groups (PGs)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }, "collapsed": false, "panels": [] },
+    {
+      "type": "stat",
+      "id": 20,
+      "title": "Total de PGs",
+      "description": "Número total de Placement Groups no cluster.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_pg_total{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "stat",
+      "id": 21,
+      "title": "PGs Clean",
+      "description": "PGs em estado clean (saudáveis).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_pg_clean{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "green" } } }
+    },
+    {
+      "type": "stat",
+      "id": 22,
+      "title": "PGs Degraded",
+      "description": "PGs com réplicas faltantes.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_pg_degraded{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 }
+          ]},
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 23,
+      "title": "PGs Inconsistent",
+      "description": "PGs com inconsistência detectada por scrubbing.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_pg_inconsistent{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 1 }
+          ]},
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 24,
+      "title": "Objetos Unfound",
+      "description": "Objetos que o cluster não consegue localizar.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_num_objects_unfound{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 1 }
+          ]},
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 25,
+      "title": "Objetos Misplaced",
+      "description": "Objetos em OSDs diferentes do destino planejado.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 22 },
+      "targets": [{ "expr": "sum(ceph_num_objects_misplaced{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 26,
+      "title": "Distribuição de Estados de PG",
+      "description": "Série temporal de PGs nos principais estados operacionais.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 26 },
+      "targets": [
+        { "expr": "sum(ceph_pg_active{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "active" },
+        { "expr": "sum(ceph_pg_clean{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "clean" },
+        { "expr": "sum(ceph_pg_degraded{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "degraded" },
+        { "expr": "sum(ceph_pg_recovering{k8s_cluster_name=\"$cluster\"})", "refId": "D", "legendFormat": "recovering" },
+        { "expr": "sum(ceph_pg_backfilling{k8s_cluster_name=\"$cluster\"})", "refId": "E", "legendFormat": "backfilling" },
+        { "expr": "sum(ceph_pg_peering{k8s_cluster_name=\"$cluster\"})", "refId": "F", "legendFormat": "peering" },
+        { "expr": "sum(ceph_pg_scrubbing{k8s_cluster_name=\"$cluster\"})", "refId": "G", "legendFormat": "scrubbing" },
+        { "expr": "sum(ceph_pg_inconsistent{k8s_cluster_name=\"$cluster\"})", "refId": "H", "legendFormat": "inconsistent" },
+        { "expr": "sum(ceph_pg_stale{k8s_cluster_name=\"$cluster\"})", "refId": "I", "legendFormat": "stale" },
+        { "expr": "sum(ceph_pg_undersized{k8s_cluster_name=\"$cluster\"})", "refId": "J", "legendFormat": "undersized" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10, "stacking": { "mode": "normal" } } } }
+    },
+
+    { "type": "row", "id": 103, "title": "OSD - Performance & I/O", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 }, "collapsed": false, "panels": [] },
+    {
+      "type": "timeseries",
+      "id": 30,
+      "title": "IOPS por Tipo de Operação",
+      "description": "Taxa de operações por segundo nos OSDs (read, write, read-modify-write).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "targets": [
+        { "expr": "sum(rate(ceph_osd_op_r_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+        { "expr": "sum(rate(ceph_osd_op_w_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" },
+        { "expr": "sum(rate(ceph_osd_op_rw_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "read-modify-write" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 31,
+      "title": "Throughput OSD",
+      "description": "Bytes por segundo lidos e escritos pelos OSDs.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "targets": [
+        { "expr": "sum(rate(ceph_osd_op_r_out_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+        { "expr": "sum(rate(ceph_osd_op_w_in_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 32,
+      "title": "Latência Média OSD (apply / commit)",
+      "description": "Latência média apply e commit dos OSDs (ms).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "targets": [
+        { "expr": "avg(ceph_osd_apply_latency_ms{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "apply avg" },
+        { "expr": "max(ceph_osd_apply_latency_ms{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "apply max" },
+        { "expr": "avg(ceph_osd_commit_latency_ms{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "commit avg" },
+        { "expr": "max(ceph_osd_commit_latency_ms{k8s_cluster_name=\"$cluster\"})", "refId": "D", "legendFormat": "commit max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 33,
+      "title": "Latência Média por Operação (derivada)",
+      "description": "Latência média calculada a partir de sum/count (read, write, rw).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "targets": [
+        { "expr": "sum(rate(ceph_osd_op_r_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_osd_op_r_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+        { "expr": "sum(rate(ceph_osd_op_w_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_osd_op_w_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" },
+        { "expr": "sum(rate(ceph_osd_op_rw_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_osd_op_rw_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "read-modify-write" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "lineWidth": 2 } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 34,
+      "title": "Recovery - Objetos & Bytes",
+      "description": "Taxa de recuperação em objetos/s e bytes/s.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 52 },
+      "targets": [
+        { "expr": "sum(rate(ceph_osd_recovery_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "recovery ops/s" },
+        { "expr": "sum(rate(ceph_osd_recovery_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "recovery bytes/s" }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "line", "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "recovery ops/s" }, "properties": [{ "id": "unit", "value": "ops" }] },
+          { "matcher": { "id": "byName", "options": "recovery bytes/s" }, "properties": [{ "id": "unit", "value": "Bps" }] }
+        ]
+      }
+    },
+    {
+      "type": "bargauge",
+      "id": 35,
+      "title": "Top 10 OSDs por Uso (%)",
+      "description": "OSDs com maior percentual de utilização.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 52 },
+      "targets": [
+        { "expr": "topk(10, ceph_osd_stat_bytes_used{k8s_cluster_name=\"$cluster\"} / ceph_osd_stat_bytes{k8s_cluster_name=\"$cluster\"} * 100)", "refId": "A", "legendFormat": "osd.{{ceph_daemon}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red", "value": 85 }
+          ]}
+        }
+      },
+      "options": { "displayMode": "gradient", "orientation": "horizontal" }
+    },
+
+    { "type": "row", "id": 104, "title": "Pools", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 }, "collapsed": false, "panels": [] },
+    {
+      "type": "table",
+      "id": 40,
+      "title": "Visão Geral dos Pools",
+      "description": "Uso, objetos e capacidade disponível por pool.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 60 },
+      "targets": [
+        { "expr": "sum by (pool_id, name) (ceph_pool_bytes_used{k8s_cluster_name=\"$cluster\"} * on(pool_id) group_left(name) ceph_pool_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "A", "format": "table", "instant": true, "legendFormat": "used" },
+        { "expr": "sum by (pool_id, name) (ceph_pool_stored{k8s_cluster_name=\"$cluster\"} * on(pool_id) group_left(name) ceph_pool_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "B", "format": "table", "instant": true },
+        { "expr": "sum by (pool_id, name) (ceph_pool_max_avail{k8s_cluster_name=\"$cluster\"} * on(pool_id) group_left(name) ceph_pool_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "C", "format": "table", "instant": true },
+        { "expr": "sum by (pool_id, name) (ceph_pool_objects{k8s_cluster_name=\"$cluster\"} * on(pool_id) group_left(name) ceph_pool_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "D", "format": "table", "instant": true },
+        { "expr": "sum by (pool_id, name) (ceph_pool_percent_used{k8s_cluster_name=\"$cluster\"} * on(pool_id) group_left(name) ceph_pool_metadata{k8s_cluster_name=\"$cluster\"})", "refId": "E", "format": "table", "instant": true }
+      ],
+      "transformations": [
+        { "id": "merge" },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "k8s_cluster_name": true },
+          "renameByName": {
+            "pool_id": "Pool ID", "name": "Pool",
+            "Value #A": "Used (raw)", "Value #B": "Stored", "Value #C": "Max Avail",
+            "Value #D": "Objects", "Value #E": "Used %"
+          }
+        }}
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Used (raw)" }, "properties": [{ "id": "unit", "value": "bytes" }] },
+          { "matcher": { "id": "byName", "options": "Stored" }, "properties": [{ "id": "unit", "value": "bytes" }] },
+          { "matcher": { "id": "byName", "options": "Max Avail" }, "properties": [{ "id": "unit", "value": "bytes" }] },
+          { "matcher": { "id": "byName", "options": "Objects" }, "properties": [{ "id": "unit", "value": "short" }] },
+          { "matcher": { "id": "byName", "options": "Used %" }, "properties": [
+            { "id": "unit", "value": "percent" },
+            { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" }}
+          ]}
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 41,
+      "title": "IOPS por Pool",
+      "description": "Operações de leitura e escrita por pool.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 70 },
+      "targets": [
+        { "expr": "sum by (pool_id) (rate(ceph_pool_rd_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "rd pool {{pool_id}}" },
+        { "expr": "sum by (pool_id) (rate(ceph_pool_wr_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "wr pool {{pool_id}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 42,
+      "title": "Throughput por Pool",
+      "description": "Bytes por segundo de leitura e escrita por pool.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 70 },
+      "targets": [
+        { "expr": "sum by (pool_id) (rate(ceph_pool_rd_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "rd pool {{pool_id}}" },
+        { "expr": "sum by (pool_id) (rate(ceph_pool_wr_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "wr pool {{pool_id}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "Bps" } }
+    },
+
+    { "type": "row", "id": 105, "title": "MON & MGR", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 78 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 50,
+        "title": "Sessões MON",
+        "description": "Número de sessões ativas nos monitores.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 79 },
+        "targets": [{ "expr": "sum by (ceph_daemon) (ceph_mon_num_sessions{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "{{ceph_daemon}}" }],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      },
+      {
+        "type": "timeseries", "id": 51,
+        "title": "Eleições MON",
+        "description": "Taxa de eleições (call/win/lose) no quórum de monitores.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 79 },
+        "targets": [
+          { "expr": "sum(rate(ceph_mon_election_call_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "call" },
+          { "expr": "sum(rate(ceph_mon_election_win_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "win" },
+          { "expr": "sum(rate(ceph_mon_election_lose_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "lose" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      },
+      {
+        "type": "timeseries", "id": 52,
+        "title": "Paxos - Latência Commit",
+        "description": "Latência média do commit do Paxos.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 86 },
+        "targets": [
+          { "expr": "sum(rate(ceph_paxos_commit_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_paxos_commit_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "avg commit" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "stat", "id": 53,
+        "title": "MGR Ativo",
+        "description": "Status do Manager (1=ativo).",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 86 },
+        "targets": [{ "expr": "max(ceph_mgr_status{k8s_cluster_name=\"$cluster\"})", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      }
+    ]},
+
+    { "type": "row", "id": 106, "title": "MDS / CephFS", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 79 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 60,
+        "title": "Requisições MDS",
+        "description": "Taxa de requisições e respostas lentas do MDS.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 80 },
+        "targets": [
+          { "expr": "sum(rate(ceph_mds_request_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "requests" },
+          { "expr": "sum(rate(ceph_mds_slow_reply_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "slow replies" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      },
+      {
+        "type": "timeseries", "id": 61,
+        "title": "Latência Média de Reply MDS",
+        "description": "Latência média das respostas do MDS.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 80 },
+        "targets": [
+          { "expr": "sum(rate(ceph_mds_reply_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_mds_reply_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "reply" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "timeseries", "id": 62,
+        "title": "Inodes & Caps",
+        "description": "Inodes gerenciados e caps emitidos pelo MDS.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 87 },
+        "targets": [
+          { "expr": "sum(ceph_mds_inodes{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "inodes" },
+          { "expr": "sum(ceph_mds_inodes_with_caps{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "inodes w/caps" },
+          { "expr": "sum(ceph_mds_caps{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "caps" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      },
+      {
+        "type": "timeseries", "id": 63,
+        "title": "Sessões Clientes MDS",
+        "description": "Sessões abertas e stale no MDS.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 87 },
+        "targets": [
+          { "expr": "sum(ceph_mds_sessions_sessions_open{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "open" },
+          { "expr": "sum(ceph_mds_sessions_sessions_stale{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "stale" },
+          { "expr": "sum(ceph_mds_sessions_session_count{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "total" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      }
+    ]},
+
+    { "type": "row", "id": 107, "title": "RGW (Object Gateway)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 80 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 70,
+        "title": "Requisições e Falhas RGW",
+        "description": "Taxa total de requisições RGW e falhas.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 81 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rgw_req_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "req" },
+          { "expr": "sum(rate(ceph_rgw_failed_req_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "failed" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "reqps" } }
+      },
+      {
+        "type": "timeseries", "id": 71,
+        "title": "Throughput RGW (GET/PUT)",
+        "description": "Bytes por segundo das operações GET e PUT de objetos.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 81 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rgw_op_get_obj_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "GET" },
+          { "expr": "sum(rate(ceph_rgw_op_put_obj_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "PUT" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "Bps" } }
+      },
+      {
+        "type": "timeseries", "id": 72,
+        "title": "Operações S3 (ops/s)",
+        "description": "Taxa de operações por tipo (GET, PUT, DELETE, LIST).",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 88 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rgw_op_get_obj_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "GET obj" },
+          { "expr": "sum(rate(ceph_rgw_op_put_obj_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "PUT obj" },
+          { "expr": "sum(rate(ceph_rgw_op_del_obj_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "DEL obj" },
+          { "expr": "sum(rate(ceph_rgw_op_list_obj_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "D", "legendFormat": "LIST obj" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      },
+      {
+        "type": "timeseries", "id": 73,
+        "title": "Latência Média por Operação RGW",
+        "description": "Latência média de GET/PUT/DEL/LIST derivada de sum/count.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 88 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rgw_op_get_obj_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rgw_op_get_obj_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "GET" },
+          { "expr": "sum(rate(ceph_rgw_op_put_obj_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rgw_op_put_obj_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "PUT" },
+          { "expr": "sum(rate(ceph_rgw_op_del_obj_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rgw_op_del_obj_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "DEL" },
+          { "expr": "sum(rate(ceph_rgw_op_list_obj_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rgw_op_list_obj_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "D", "legendFormat": "LIST" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "timeseries", "id": 74,
+        "title": "Cache RGW",
+        "description": "Taxa de hits e misses do cache do RGW.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 6, "w": 12, "x": 0, "y": 95 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rgw_cache_hit_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "hits" },
+          { "expr": "sum(rate(ceph_rgw_cache_miss_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "misses" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      },
+      {
+        "type": "timeseries", "id": 75,
+        "title": "Fila RGW",
+        "description": "Requisições ativas e tamanho da fila no RGW.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 6, "w": 12, "x": 12, "y": 95 },
+        "targets": [
+          { "expr": "sum(ceph_rgw_qactive{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "active" },
+          { "expr": "sum(ceph_rgw_qlen{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "queue length" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      }
+    ]},
+
+    { "type": "row", "id": 108, "title": "RBD (Block Device)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 81 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 80,
+        "title": "RBD IOPS",
+        "description": "Operações de leitura e escrita em imagens RBD.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 82 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rbd_read_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+          { "expr": "sum(rate(ceph_rbd_write_ops_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      },
+      {
+        "type": "timeseries", "id": 81,
+        "title": "RBD Throughput",
+        "description": "Bytes por segundo de leitura e escrita em RBD.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 82 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rbd_read_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+          { "expr": "sum(rate(ceph_rbd_write_bytes_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "Bps" } }
+      },
+      {
+        "type": "timeseries", "id": 82,
+        "title": "RBD Latência Média",
+        "description": "Latência média de operações RBD (read/write).",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 24, "x": 0, "y": 89 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rbd_read_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rbd_read_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "read" },
+          { "expr": "sum(rate(ceph_rbd_write_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rbd_write_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "write" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      }
+    ]},
+
+    { "type": "row", "id": 109, "title": "BlueStore & BlueFS", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 82 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 90,
+        "title": "BlueFS - Uso DB/WAL/Slow",
+        "description": "Bytes usados em cada partição do BlueFS.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 83 },
+        "targets": [
+          { "expr": "sum(ceph_bluefs_db_used_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "db used" },
+          { "expr": "sum(ceph_bluefs_wal_used_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "wal used" },
+          { "expr": "sum(ceph_bluefs_slow_used_bytes{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "slow used" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "bytes" } }
+      },
+      {
+        "type": "timeseries", "id": 91,
+        "title": "BlueFS - Bytes Escritos",
+        "description": "Escrita por destino (WAL/SST/Slow).",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 83 },
+        "targets": [
+          { "expr": "sum(rate(ceph_bluefs_bytes_written_wal_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "wal" },
+          { "expr": "sum(rate(ceph_bluefs_bytes_written_sst_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "sst" },
+          { "expr": "sum(rate(ceph_bluefs_bytes_written_slow_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "slow" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "Bps" } }
+      },
+      {
+        "type": "timeseries", "id": 92,
+        "title": "BlueStore - Latência Kv Sync / Commit",
+        "description": "Latência média de kv_sync, kv_commit e txc_commit.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 90 },
+        "targets": [
+          { "expr": "sum(rate(ceph_bluestore_kv_sync_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_bluestore_kv_sync_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "kv_sync" },
+          { "expr": "sum(rate(ceph_bluestore_kv_commit_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_bluestore_kv_commit_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "kv_commit" },
+          { "expr": "sum(rate(ceph_bluestore_txc_commit_lat_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_bluestore_txc_commit_lat_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "txc_commit" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "timeseries", "id": 93,
+        "title": "BlueStore - Cache Onode Hit Ratio",
+        "description": "Taxa de acerto do cache de onodes do BlueStore.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 90 },
+        "targets": [
+          { "expr": "sum(rate(ceph_bluestore_onode_hits_total{k8s_cluster_name=\"$cluster\"}[5m])) / (sum(rate(ceph_bluestore_onode_hits_total{k8s_cluster_name=\"$cluster\"}[5m])) + sum(rate(ceph_bluestore_onode_misses_total{k8s_cluster_name=\"$cluster\"}[5m])))", "refId": "A", "legendFormat": "hit ratio" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+      },
+      {
+        "type": "timeseries", "id": 94,
+        "title": "BlueStore - Compressão",
+        "description": "Bytes originais vs. alocados após compressão.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 97 },
+        "targets": [
+          { "expr": "sum(ceph_bluestore_compressed_original{k8s_cluster_name=\"$cluster\"})", "refId": "A", "legendFormat": "original" },
+          { "expr": "sum(ceph_bluestore_compressed{k8s_cluster_name=\"$cluster\"})", "refId": "B", "legendFormat": "compressed" },
+          { "expr": "sum(ceph_bluestore_compressed_allocated{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "allocated" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "bytes" } }
+      },
+      {
+        "type": "timeseries", "id": 95,
+        "title": "BlueStore - Reads com Retries",
+        "description": "Taxa de leituras que precisaram de retentativa.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 97 },
+        "targets": [
+          { "expr": "sum(rate(ceph_bluestore_reads_with_retries_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "retries/s" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "ops" } }
+      }
+    ]},
+
+    { "type": "row", "id": 110, "title": "RocksDB", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 }, "collapsed": true, "panels": [
+      {
+        "type": "timeseries", "id": 120,
+        "title": "RocksDB - Compactações",
+        "description": "Compactações concluídas, em execução e tamanho da fila.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 0, "y": 84 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rocksdb_compact_completed_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "completed/s" },
+          { "expr": "sum(rate(ceph_rocksdb_compact_running_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "running/s" },
+          { "expr": "sum(ceph_rocksdb_compact_queue_len{k8s_cluster_name=\"$cluster\"})", "refId": "C", "legendFormat": "queue len" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      },
+      {
+        "type": "timeseries", "id": 121,
+        "title": "RocksDB - Latência",
+        "description": "Latências médias de get, submit e submit_sync.",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 84 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rocksdb_get_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_get_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "get" },
+          { "expr": "sum(rate(ceph_rocksdb_submit_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_submit_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "submit" },
+          { "expr": "sum(rate(ceph_rocksdb_submit_sync_latency_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_submit_sync_latency_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "submit_sync" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "timeseries", "id": 122,
+        "title": "RocksDB - Tempos de Write",
+        "description": "Latências médias dos estágios de escrita (WAL, memtable, pre/post, delay).",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "gridPos": { "h": 7, "w": 24, "x": 0, "y": 91 },
+        "targets": [
+          { "expr": "sum(rate(ceph_rocksdb_rocksdb_write_wal_time_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_rocksdb_write_wal_time_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "A", "legendFormat": "wal" },
+          { "expr": "sum(rate(ceph_rocksdb_rocksdb_write_memtable_time_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_rocksdb_write_memtable_time_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "B", "legendFormat": "memtable" },
+          { "expr": "sum(rate(ceph_rocksdb_rocksdb_write_pre_and_post_time_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_rocksdb_write_pre_and_post_time_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "C", "legendFormat": "pre/post" },
+          { "expr": "sum(rate(ceph_rocksdb_rocksdb_write_delay_time_sum_total{k8s_cluster_name=\"$cluster\"}[5m])) / sum(rate(ceph_rocksdb_rocksdb_write_delay_time_count_total{k8s_cluster_name=\"$cluster\"}[5m]))", "refId": "D", "legendFormat": "delay" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      }
+    ]}
+  ]
+}
