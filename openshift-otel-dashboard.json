@@ -1,0 +1,707 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Dashboard profissional OpenShift com métricas OpenTelemetry (OTel). Inclui visão geral, API Server, etcd, Nodes, Pods, Containers, Storage, Rede e HAProxy/Router.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "tags": ["openshift", "otel", "kubernetes", "observability"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "definition": "label_values(apiserver_request_total, k8s_cluster_name)",
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "k8s_cluster_name",
+        "options": [],
+        "query": { "query": "label_values(apiserver_request_total, k8s_cluster_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "definition": "label_values(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}, namespace)",
+        "includeAll": true,
+        "label": "Namespace",
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": { "query": "label_values(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}, namespace)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "definition": "label_values(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}, k8s_pod_name)",
+        "includeAll": true,
+        "label": "Pod",
+        "multi": true,
+        "name": "k8s_pod_name",
+        "options": [],
+        "query": { "query": "label_values(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}, k8s_pod_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "definition": "label_values(container_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}, k8s_container_name)",
+        "includeAll": true,
+        "label": "Container",
+        "multi": true,
+        "name": "k8s_container_name",
+        "options": [],
+        "query": { "query": "label_values(container_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}, k8s_container_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OpenShift - OTel Observability",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "type": "row",
+      "id": 1,
+      "title": "🏠 Overview - Big Numbers",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "Clusters",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(count by(k8s_cluster_name)(kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 3,
+      "title": "Total Nodes",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 4,
+      "title": "Nodes Ready",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] }, "unit": "short" } },
+      "targets": [{ "expr": "sum(k8s_node_condition{k8s_cluster_name=~\"$k8s_cluster_name\", condition=\"Ready\", status=\"true\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 5,
+      "title": "Namespaces",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "purple" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(count by(namespace)(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 6,
+      "title": "Running Pods",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(count by(k8s_pod_name)(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 7,
+      "title": "Container Restarts (1h)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" } },
+      "targets": [{ "expr": "sum(increase(k8s_container_restarts{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}[1h]))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 8,
+      "title": "API Server Error Rate (5xx)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }, "unit": "percentunit" } },
+      "targets": [{ "expr": "sum(rate(apiserver_request_total{code=~\"5..\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum(rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 9,
+      "title": "etcd DB Size",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 4000000000 }, { "color": "red", "value": 7000000000 }] }, "unit": "bytes" } },
+      "targets": [{ "expr": "max(etcd_mvcc_db_total_size_in_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 10,
+      "title": "API Server Avg Latency",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 1 }] }, "unit": "s" } },
+      "targets": [{ "expr": "sum(rate(apiserver_request_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum(rate(apiserver_request_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 11,
+      "title": "Cluster CPU Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] }, "unit": "percent" } },
+      "targets": [{ "expr": "100 * sum(k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(sum(kube_node_status_allocatable{k8s_cluster_name=~\"$k8s_cluster_name\", resource=\"cpu\"}), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 12,
+      "title": "Cluster Memory Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] }, "unit": "percent" } },
+      "targets": [{ "expr": "100 * sum(k8s_node_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(sum(kube_node_status_allocatable{k8s_cluster_name=~\"$k8s_cluster_name\", resource=\"memory\"}), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 13,
+      "title": "HAProxy 5xx Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "reqps" } },
+      "targets": [{ "expr": "sum(rate(haproxy_backend_http_responses_total{code=\"5xx\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 14,
+      "title": "HAProxy 4xx Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 50 }] }, "unit": "reqps" } },
+      "targets": [{ "expr": "sum(rate(haproxy_backend_http_responses_total{code=\"4xx\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 15,
+      "title": "etcd WAL fsync Avg",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 5 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 0.025 }, { "color": "red", "value": 0.1 }] }, "unit": "s" } },
+      "targets": [{ "expr": "sum(rate(etcd_disk_wal_fsync_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum(rate(etcd_disk_wal_fsync_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "refId": "A" }]
+    },
+
+    {
+      "type": "row",
+      "id": 100,
+      "title": "🛰️ API Server",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 101,
+      "title": "API Server - Request Rate by Code",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 102,
+      "title": "API Server - Avg Latency",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(verb) (rate(apiserver_request_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by(verb) (rate(apiserver_request_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "legendFormat": "{{verb}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 103,
+      "title": "API Server - Requests by Namespace (Top 10)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 18 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(10, sum by(namespace) (rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}[5m])))", "legendFormat": "{{namespace}}", "refId": "A" }]
+    },
+
+    {
+      "type": "row",
+      "id": 200,
+      "title": "🗄️ etcd",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 201,
+      "title": "etcd - WAL fsync Latency",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by(k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "legendFormat": "{{k8s_cluster_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 202,
+      "title": "etcd - DB Size",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 20, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "max by(k8s_cluster_name) (etcd_mvcc_db_total_size_in_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_cluster_name}}", "refId": "A" }]
+    },
+
+    {
+      "type": "row",
+      "id": 300,
+      "title": "🖥️ Nodes",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 301,
+      "title": "Node CPU Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 302,
+      "title": "Node Memory Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (k8s_node_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 303,
+      "title": "Node Load Average (1m)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 44 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (system_load_average_1m{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 304,
+      "title": "Node Network Errors",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 44 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (rate(k8s_node_network_errors_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 305,
+      "title": "Node Filesystem Usage %",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 44 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "100 * (1 - (sum by(k8s_node_name) (k8s_node_filesystem_available_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(sum by(k8s_node_name) (k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}), 1)))", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "table",
+      "id": 306,
+      "title": "Node Allocatable Resources",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 52 },
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } } },
+      "targets": [{ "expr": "kube_node_status_allocatable{k8s_cluster_name=~\"$k8s_cluster_name\"}", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 307,
+      "title": "Node Conditions (by condition)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 52 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] } } },
+      "targets": [{ "expr": "sum by(condition, status) (k8s_node_condition{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{condition}} = {{status}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 308,
+      "title": "Node Network Drops - Receive (by device)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 60 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(device, k8s_node_name) (rate(node_network_receive_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{k8s_node_name}} / {{device}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 309,
+      "title": "Node Network Drops - Transmit (by device)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 60 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(device, k8s_node_name) (rate(node_network_transmit_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{k8s_node_name}} / {{device}}", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "id": 310,
+      "title": "Node Up/Down (kube_node_info)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 68 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "orientation": "horizontal" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] }, "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }] } },
+      "targets": [{ "expr": "kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+
+    {
+      "type": "row",
+      "id": 400,
+      "title": "📦 Pods",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 74 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 401,
+      "title": "Top 15 Pods - CPU Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 75 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, namespace) (k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 402,
+      "title": "Top 15 Pods - Memory Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 75 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, namespace) (k8s_pod_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 403,
+      "title": "Container Restarts (rate)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 83 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_pod_name, namespace, k8s_container_name) (increase(k8s_container_restarts{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}[5m]))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 404,
+      "title": "Pod Network IO (rate)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 83 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "topk(10, sum by(k8s_pod_name, namespace, direction) (rate(k8s_pod_network_io_bytes_total{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}[5m])))", "legendFormat": "{{namespace}}/{{k8s_pod_name}} {{direction}}", "refId": "A" },
+        { "expr": "topk(10, sum by(k8s_pod_name, namespace, direction) (k8s_pod_network_io_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}} {{direction}} (gauge)", "refId": "B" }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 500,
+      "title": "🧱 Containers",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 91 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 501,
+      "title": "Container CPU Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 92 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_container_name, namespace, k8s_pod_name) (container_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 502,
+      "title": "Container CPU - rate(container_cpu_usage_seconds_total)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 92 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_container_name, namespace, k8s_pod_name) (rate(container_cpu_usage_seconds_total{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"}[5m])))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 503,
+      "title": "Container Memory Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 100 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_container_name, namespace, k8s_pod_name) (container_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 504,
+      "title": "Container Memory Working Set",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 100 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_container_name, namespace, k8s_pod_name) (container_memory_working_set_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 505,
+      "title": "Container Filesystem Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 108 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_container_name, namespace, k8s_pod_name) (container_filesystem_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "table",
+      "id": 506,
+      "title": "Container Status Reason",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 108 },
+      "options": { "showHeader": true },
+      "targets": [{ "expr": "k8s_container_status_reason{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_container_name=~\"$k8s_container_name\"} > 0", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 600,
+      "title": "💾 Storage / Volumes",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 116 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 601,
+      "title": "Pod Volume Usage",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 117 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, namespace, k8s_volume_name) (k8s_pod_volume_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_volume_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 602,
+      "title": "Volume Capacity",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 117 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, namespace, k8s_volume_name) (k8s_volume_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}))", "legendFormat": "{{namespace}}/{{k8s_pod_name}}/{{k8s_volume_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 603,
+      "title": "Node Filesystem - Available vs Capacity",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 125 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_available_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}} available", "refId": "A" },
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}} capacity", "refId": "B" },
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_node_name}} usage", "refId": "C" }
+      ]
+    },
+    {
+      "type": "table",
+      "id": 604,
+      "title": "PersistentVolumeClaims",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 125 },
+      "options": { "showHeader": true },
+      "targets": [{ "expr": "kube_persistentvolumeclaim_info{k8s_cluster_name=~\"$k8s_cluster_name\", namespace=~\"$namespace\"}", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "Value": true } } }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 700,
+      "title": "🌐 HAProxy / Router",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 133 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 701,
+      "title": "HAProxy Frontend Connections",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 134 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(frontend) (rate(haproxy_frontend_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{frontend}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 702,
+      "title": "HAProxy Backend Connections",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 134 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(backend) (rate(haproxy_backend_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{backend}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 703,
+      "title": "HAProxy Server Connections",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 134 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(server, backend) (rate(haproxy_server_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])))", "legendFormat": "{{backend}}/{{server}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 704,
+      "title": "HAProxy Frontend HTTP Responses (by code)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 142 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(haproxy_frontend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 705,
+      "title": "HAProxy Backend HTTP Responses (by code)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 142 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(haproxy_backend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "id": 706,
+      "title": "HAProxy Backend Errors (4xx + 5xx) - Top Backends",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 150 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "topk(10, sum by(backend, code) (rate(haproxy_backend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\", code=~\"4xx|5xx\"}[5m])))", "legendFormat": "{{backend}} - {{code}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 707,
+      "title": "HAProxy Backend - Latencies (Connect / Queue / Response)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 158 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "avg by(backend) (haproxy_backend_http_average_connect_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} connect", "refId": "A" },
+        { "expr": "avg by(backend) (haproxy_backend_http_average_queue_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} queue", "refId": "B" },
+        { "expr": "avg by(backend) (haproxy_backend_http_average_response_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} response", "refId": "C" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 708,
+      "title": "HAProxy Server - Latencies (Connect / Queue / Response)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 158 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_connect_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} connect", "refId": "A" },
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_queue_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} queue", "refId": "B" },
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_response_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} response", "refId": "C" }
+      ]
+    }
+  ]
+}
