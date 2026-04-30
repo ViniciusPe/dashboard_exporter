@@ -1,0 +1,494 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Status Page macro de clusters OpenShift com métricas OpenTelemetry (OTel). Drill-down para o dashboard micro ao clicar no nome do cluster.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "uid": "openshift-otel-status-page",
+  "title": "OpenShift OTel - Cluster Health Status Page",
+  "tags": ["openshift", "otel", "status-page", "observability"],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "weekStart": "",
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": { "text": ["All"], "value": ["$__all"] },
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "definition": "label_values(container_cpu_usage, k8s_cluster_name)",
+        "includeAll": true,
+        "multi": true,
+        "label": "Cluster",
+        "name": "k8s_cluster_name",
+        "options": [],
+        "query": { "qryType": 1, "query": "label_values(container_cpu_usage, k8s_cluster_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "id": 1,
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "<div style=\"text-align:center; padding:10px 0;\"><h1 style=\"margin:0; font-size:24px;\">🖥️ OpenShift OTel - Cluster Health Status Page</h1><p style=\"margin:4px 0 0 0; color:#aaa; font-size:13px;\">Visão consolidada de saúde por cluster · clique no nome do cluster para abrir o detalhe</p></div>",
+        "mode": "html"
+      },
+      "pluginVersion": "11.3.0",
+      "title": "",
+      "transparent": true
+    },
+    {
+      "type": "text",
+      "id": 2,
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 3 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "<div style=\"display:flex; gap:24px; justify-content:center; padding:8px 0; font-size:13px;\"><span>🟢 Saudável</span><span>🟡 Atenção</span><span>🔴 Crítico</span></div>",
+        "mode": "html"
+      },
+      "pluginVersion": "11.3.0",
+      "title": "",
+      "transparent": true
+    },
+    {
+      "type": "table",
+      "id": 3,
+      "title": "Infraestrutura",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 5 },
+      "pluginVersion": "11.3.0",
+      "options": {
+        "cellHeight": "md",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "🚨 Pods Problem." }]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "cellOptions": { "applyToRow": false, "mode": "gradient", "type": "color-background" },
+            "filterable": true,
+            "inspect": false,
+            "minWidth": 110
+          },
+          "decimals": 1,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Cluster" },
+            "properties": [
+              { "id": "custom.width", "value": 280 },
+              { "id": "custom.align", "value": "left" },
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              { "id": "color", "value": { "fixedColor": "white", "mode": "fixed" } },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "🔍 Ver detalhes do cluster",
+                    "url": "/d/openshift-otel-cluster-detail/openshift-otel-cluster-detail?var-k8s_cluster_name=${__data.fields.Cluster}&var-datasource=${datasource}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "⚡ CPU %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 70 },
+                    { "color": "#C4162A", "value": 85 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🧠 Memory %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 70 },
+                    { "color": "#C4162A", "value": 85 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "💾 PVCs Criticos" },
+            "properties": [
+              { "id": "decimals", "value": 0 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "#C4162A", "value": 3 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🌐 Network Drop" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "dark-green", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "dark-red", "value": 10 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } },
+              { "id": "decimals", "value": 0 },
+              { "id": "custom.width", "value": 180 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🔀 HAProxy 5xx" },
+            "properties": [
+              { "id": "decimals", "value": 0 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "#C4162A", "value": 10 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } },
+              { "id": "unit", "value": "reqps" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🖥️ Nodes NotReady" },
+            "properties": [
+              { "id": "decimals", "value": 0 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "#C4162A", "value": 1 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🗄️ ETCD DB" },
+            "properties": [
+              { "id": "unit", "value": "bytes" },
+              { "id": "decimals", "value": 1 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 4000000000 },
+                    { "color": "#C4162A", "value": 7000000000 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🚨 Pods Problem." },
+            "properties": [
+              { "id": "decimals", "value": 0 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#37872D", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "#C4162A", "value": 5 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } },
+              { "id": "custom.width", "value": 170 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "💿 Disk Node" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "dark-green", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "red", "value": 3 }
+                  ]
+                }
+              },
+              { "id": "decimals", "value": 0 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "🛰️ API 5xx %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "dark-green", "value": null },
+                    { "color": "orange", "value": 1 },
+                    { "color": "red", "value": 5 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "⏱️ etcd fsync (s)" },
+            "properties": [
+              { "id": "unit", "value": "s" },
+              { "id": "decimals", "value": 3 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "dark-green", "value": null },
+                    { "color": "orange", "value": 0.025 },
+                    { "color": "red", "value": 0.1 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "100 * sum by (k8s_cluster_name) (k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(sum by (k8s_cluster_name) (kube_node_status_allocatable{resource=\"cpu\", k8s_cluster_name=~\"$k8s_cluster_name\"}), 1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "CPU"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "100 * sum by (k8s_cluster_name) (k8s_node_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(sum by (k8s_cluster_name) (kube_node_status_allocatable{resource=\"memory\", k8s_cluster_name=~\"$k8s_cluster_name\"}), 1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "MEM"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "count by (k8s_cluster_name) (max by (k8s_cluster_name, namespace, k8s_pod_name, k8s_volume_name) ((k8s_pod_volume_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"} / clamp_min(k8s_volume_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}, 1)) * 100) >= 85) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "PVC"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "sum by (k8s_cluster_name) (rate(node_network_receive_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\", device!=\"lo\"}[5m]) + rate(node_network_transmit_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\", device!=\"lo\"}[5m])) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "NET"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "sum by (k8s_cluster_name) (rate(haproxy_backend_http_responses_total{code=\"5xx\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "HAPROXY"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "sum by (k8s_cluster_name) (k8s_node_condition{condition=\"Ready\", status=\"false\", k8s_cluster_name=~\"$k8s_cluster_name\"}) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "NODES"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "max by (k8s_cluster_name) (etcd_mvcc_db_total_size_in_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "ETCD"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "count by (k8s_cluster_name) (k8s_container_status_reason{reason=~\"CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled\", k8s_cluster_name=~\"$k8s_cluster_name\"} > 0) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "PODS"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "count by (k8s_cluster_name) (max by (k8s_cluster_name, k8s_node_name) (((k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"} - k8s_node_filesystem_available_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}) / clamp_min(k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"}, 1)) * 100) > 85) or sum by (k8s_cluster_name) (kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}) * 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "DISK"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "100 * sum by (k8s_cluster_name) (rate(apiserver_request_total{code=~\"5..\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by (k8s_cluster_name) (rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "API5XX"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "editorMode": "code",
+          "expr": "sum by (k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by (k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "ETCDFSYNC"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "includeByName": {},
+            "indexByName": {
+              "k8s_cluster_name": 0,
+              "Value #CPU": 1,
+              "Value #MEM": 2,
+              "Value #NODES": 3,
+              "Value #PODS": 4,
+              "Value #PVC": 5,
+              "Value #DISK": 6,
+              "Value #NET": 7,
+              "Value #HAPROXY": 8,
+              "Value #API5XX": 9,
+              "Value #ETCD": 10,
+              "Value #ETCDFSYNC": 11
+            },
+            "renameByName": {
+              "k8s_cluster_name": "Cluster",
+              "Value #CPU": "⚡ CPU %",
+              "Value #MEM": "🧠 Memory %",
+              "Value #NODES": "🖥️ Nodes NotReady",
+              "Value #PODS": "🚨 Pods Problem.",
+              "Value #PVC": "💾 PVCs Criticos",
+              "Value #DISK": "💿 Disk Node",
+              "Value #NET": "🌐 Network Drop",
+              "Value #HAPROXY": "🔀 HAProxy 5xx",
+              "Value #API5XX": "🛰️ API 5xx %",
+              "Value #ETCD": "🗄️ ETCD DB",
+              "Value #ETCDFSYNC": "⏱️ etcd fsync (s)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
