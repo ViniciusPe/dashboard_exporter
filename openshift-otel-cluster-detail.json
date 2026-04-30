@@ -1,0 +1,450 @@
+{
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "grafana", "uid": "-- Grafana --" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "Detalhe (micro) de cluster OpenShift via OTel/Mimir. Variáveis: cluster (apiserver_request_total), namespace (apiserver_request_total), node (k8s_node_cpu_usage), pod (k8s_pod_cpu_usage).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "openshift-otel-cluster-detail",
+  "title": "OpenShift OTel - Cluster Detail",
+  "tags": ["openshift", "otel", "kubernetes", "detail"],
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "links": [
+    { "asDropdown": false, "icon": "external link", "includeVars": false, "keepTime": true, "tags": [], "targetBlank": false, "title": "← Voltar para Status Page", "type": "link", "url": "/d/openshift-otel-status-page/openshift-otel-cluster-health-status-page" }
+  ],
+  "templating": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "definition": "label_values(apiserver_request_total, k8s_cluster_name)",
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "k8s_cluster_name",
+        "query": { "query": "label_values(apiserver_request_total, k8s_cluster_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "definition": "label_values(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}, k8s_namespace_name)",
+        "includeAll": true,
+        "label": "Namespace",
+        "multi": true,
+        "name": "k8s_namespace_name",
+        "query": { "query": "label_values(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}, k8s_namespace_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "definition": "label_values(k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}, k8s_node_name)",
+        "includeAll": true,
+        "label": "Node",
+        "multi": true,
+        "name": "k8s_node_name",
+        "query": { "query": "label_values(k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}, k8s_node_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "definition": "label_values(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\"}, k8s_pod_name)",
+        "includeAll": true,
+        "label": "Pod",
+        "multi": true,
+        "name": "k8s_pod_name",
+        "query": { "query": "label_values(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\"}, k8s_pod_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    { "type": "row", "id": 1, "title": "🏠 Overview (números do cluster)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
+
+    {
+      "type": "stat", "id": 2, "title": "Total de Nodes",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(count by(k8s_node_name)(k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 3, "title": "Nodes Ready",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] }, "unit": "short" } },
+      "targets": [{ "expr": "sum(k8s_node_condition{k8s_cluster_name=~\"$k8s_cluster_name\", condition=\"Ready\", status=\"true\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 4, "title": "Total de Pods",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue" }] }, "unit": "short" } },
+      "targets": [{ "expr": "count(count by(k8s_pod_name)(k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 5, "title": "CPU total em uso (cores)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 16 }, { "color": "red", "value": 64 }] }, "unit": "short", "decimals": 2 } },
+      "targets": [{ "expr": "sum(k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 6, "title": "Memória total em uso (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }, "unit": "bytes" } },
+      "targets": [{ "expr": "sum(k8s_node_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 7, "title": "Containers reiniciados (1h)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" } },
+      "targets": [{ "expr": "sum(increase(k8s_container_restarts{k8s_cluster_name=~\"$k8s_cluster_name\"}[1h]))", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 8, "title": "API Server 5xx (%)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }, "unit": "percentunit" } },
+      "targets": [{ "expr": "sum(rate(apiserver_request_total{code=~\"5..\", k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum(rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 9, "title": "etcd DB Size (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "yellow", "value": 4000000000 }, { "color": "red", "value": 7000000000 }] }, "unit": "bytes" } },
+      "targets": [{ "expr": "max(etcd_mvcc_db_total_size_in_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "refId": "A" }]
+    },
+
+    { "type": "row", "id": 100, "title": "🛰️ API Server", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 101, "title": "API Server - Requisições por código (req/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 102, "title": "API Server - Latência média por verbo (s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(verb) (rate(apiserver_request_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by(verb) (rate(apiserver_request_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "legendFormat": "{{verb}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 103, "title": "API Server - Top 10 (verbo / código) req/s",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(10, sum by(verb, code) (rate(apiserver_request_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])))", "legendFormat": "{{verb}} - {{code}}", "refId": "A" }]
+    },
+
+    { "type": "row", "id": 200, "title": "🗄️ etcd", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 201, "title": "etcd - WAL fsync latência média (s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_sum{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])) / clamp_min(sum by(k8s_cluster_name) (rate(etcd_disk_wal_fsync_duration_seconds_count{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])), 1)", "legendFormat": "{{k8s_cluster_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 202, "title": "etcd - DB Size (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 20, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "max by(k8s_cluster_name) (etcd_mvcc_db_total_size_in_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_cluster_name}}", "refId": "A" }]
+    },
+
+    { "type": "row", "id": 300, "title": "🖥️ Nodes", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 301, "title": "CPU por Node (cores em uso)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 2, "custom": { "fillOpacity": 10, "lineWidth": 2, "axisLabel": "cores" } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (k8s_node_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 302, "title": "Memória por Node (bytes em uso)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (k8s_node_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 303, "title": "Load Average 1m por Node",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 2, "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (system_load_average_1m{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 304, "title": "Erros de rede por Node (pacotes/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 40 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(k8s_node_name) (rate(k8s_node_network_errors_total{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"}[5m]))", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 305, "title": "Filesystem do Node - % usado",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "100 * (1 - (sum by(k8s_node_name) (k8s_node_filesystem_available_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"}) / clamp_min(sum by(k8s_node_name) (k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"}), 1)))", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+    {
+      "type": "stat", "id": 306, "title": "Condições do Node (Ready/MemoryPressure/DiskPressure/PIDPressure)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] } } },
+      "targets": [{ "expr": "sum by(k8s_node_name, condition, status) (k8s_node_condition{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}} {{condition}}={{status}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 307, "title": "Network Drops RX por device (pacotes/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(device, k8s_node_name) (rate(node_network_receive_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{k8s_node_name}} / {{device}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 308, "title": "Network Drops TX por device (pacotes/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(device, k8s_node_name) (rate(node_network_transmit_drop_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{k8s_node_name}} / {{device}}", "refId": "A" }]
+    },
+    {
+      "type": "table", "id": 309, "title": "Recursos alocáveis do Node (kube_node_status_allocatable)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
+      "options": { "showHeader": true },
+      "targets": [{ "expr": "kube_node_status_allocatable{k8s_cluster_name=~\"$k8s_cluster_name\"}", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }]
+    },
+    {
+      "type": "stat", "id": 310, "title": "Status do Node (kube_node_info — UP/DOWN)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name", "orientation": "horizontal" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] }, "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }] } },
+      "targets": [{ "expr": "kube_node_info{k8s_cluster_name=~\"$k8s_cluster_name\"}", "legendFormat": "{{k8s_node_name}}", "refId": "A" }]
+    },
+
+    { "type": "row", "id": 400, "title": "📦 Pods e Containers", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 72 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 401, "title": "Top 15 Pods - CPU (cores em uso)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 73 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 3, "custom": { "fillOpacity": 10, "lineWidth": 2, "axisLabel": "cores" } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name) (k8s_pod_cpu_usage{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{k8s_pod_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 402, "title": "Top 15 Pods - Memória (bytes em uso)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 73 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name) (k8s_pod_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{k8s_pod_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 403, "title": "Top 15 Containers reiniciados nos últimos 5m (incremento)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 81 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, k8s_container_name) (increase(k8s_container_restarts{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}[5m])))", "legendFormat": "{{k8s_pod_name}} / {{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 404, "title": "Pod Network IO (bytes/s) por direção",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 81 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(10, sum by(k8s_pod_name, direction) (rate(k8s_pod_network_io_bytes_total{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}[5m])))", "legendFormat": "{{k8s_pod_name}} {{direction}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 405, "title": "Top 15 Containers - CPU rate (cores) - container_cpu_usage_seconds_total",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 89 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 3, "custom": { "fillOpacity": 10, "lineWidth": 2, "axisLabel": "cores" } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, k8s_container_name) (rate(container_cpu_usage_seconds_total{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}[5m])))", "legendFormat": "{{k8s_pod_name}} / {{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 406, "title": "Top 15 Containers - Memória working set (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 89 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, k8s_container_name) (container_memory_working_set_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{k8s_pod_name}} / {{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 407, "title": "Top 15 Containers - Memória total usada (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 97 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, k8s_container_name) (container_memory_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{k8s_pod_name}} / {{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 408, "title": "Top 15 Containers - Filesystem usado (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 97 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(k8s_pod_name, k8s_container_name) (container_filesystem_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"}))", "legendFormat": "{{k8s_pod_name}} / {{k8s_container_name}}", "refId": "A" }]
+    },
+    {
+      "type": "table", "id": 409, "title": "Containers em estado anormal (CrashLoop / OOMKilled / Error / ImagePullBackOff)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 105 },
+      "options": { "showHeader": true },
+      "targets": [{ "expr": "k8s_container_status_reason{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\", reason=~\"CrashLoopBackOff|OOMKilled|Error|ImagePullBackOff|ErrImagePull|CreateContainerError|ContainerCreating\"} > 0", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }]
+    },
+
+    { "type": "row", "id": 600, "title": "💾 Storage / Volumes", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 113 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 601, "title": "Pod Volume - bytes em uso (top 15)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 114 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, k8s_pod_volume_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\", k8s_pod_name=~\"$k8s_pod_name\"})", "legendFormat": "{{k8s_pod_name}} / {{k8s_volume_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 602, "title": "Volume - capacidade (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 114 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, k8s_volume_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{k8s_pod_name}} / {{k8s_volume_name}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 603, "title": "Filesystem do Node - Available / Capacity / Used (bytes)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 122 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_available_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}} available", "refId": "A" },
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_capacity_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}} capacity", "refId": "B" },
+        { "expr": "sum by(k8s_node_name) (k8s_node_filesystem_usage_bytes{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_node_name=~\"$k8s_node_name\"})", "legendFormat": "{{k8s_node_name}} usage", "refId": "C" }
+      ]
+    },
+    {
+      "type": "table", "id": 604, "title": "PersistentVolumeClaims (kube_persistentvolumeclaim_info)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 122 },
+      "options": { "showHeader": true },
+      "targets": [{ "expr": "kube_persistentvolumeclaim_info{k8s_cluster_name=~\"$k8s_cluster_name\", k8s_namespace_name=~\"$k8s_namespace_name\"}", "format": "table", "instant": true, "refId": "A" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "Value": true } } }]
+    },
+
+    { "type": "row", "id": 700, "title": "🌐 HAProxy / Router", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 130 }, "panels": [] },
+    {
+      "type": "timeseries", "id": 701, "title": "HAProxy - Conexões frontend (conn/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 131 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(frontend) (rate(haproxy_frontend_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{frontend}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 702, "title": "HAProxy - Conexões backend (conn/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 131 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(backend) (rate(haproxy_backend_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{backend}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 703, "title": "HAProxy - Conexões por servidor (top 15, conn/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 131 },
+      "fieldConfig": { "defaults": { "unit": "cps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(15, sum by(server, backend) (rate(haproxy_server_connections_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m])))", "legendFormat": "{{backend}}/{{server}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 704, "title": "HAProxy - HTTP Responses no frontend (req/s) por código",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 139 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(haproxy_frontend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 705, "title": "HAProxy - HTTP Responses no backend (req/s) por código",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 139 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by(code) (rate(haproxy_backend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\"}[5m]))", "legendFormat": "{{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 706, "title": "HAProxy - Top 10 backends com 4xx/5xx (req/s)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 147 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "mean", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "topk(10, sum by(backend, code) (rate(haproxy_backend_http_responses_total{k8s_cluster_name=~\"$k8s_cluster_name\", code=~\"4xx|5xx\"}[5m])))", "legendFormat": "{{backend}} - {{code}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "id": 707, "title": "HAProxy Backend - Latências médias (Connect / Queue / Response) ms",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 155 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "avg by(backend) (haproxy_backend_http_average_connect_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} connect", "refId": "A" },
+        { "expr": "avg by(backend) (haproxy_backend_http_average_queue_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} queue", "refId": "B" },
+        { "expr": "avg by(backend) (haproxy_backend_http_average_response_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"})", "legendFormat": "{{backend}} response", "refId": "C" }
+      ]
+    },
+    {
+      "type": "timeseries", "id": 708, "title": "HAProxy Server - Latências médias (Top 10) ms",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 155 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_connect_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} connect", "refId": "A" },
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_queue_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} queue", "refId": "B" },
+        { "expr": "topk(10, avg by(server, backend) (haproxy_server_http_average_response_latency_milliseconds{k8s_cluster_name=~\"$k8s_cluster_name\"}))", "legendFormat": "{{backend}}/{{server}} response", "refId": "C" }
+      ]
+    }
+  ]
+}
