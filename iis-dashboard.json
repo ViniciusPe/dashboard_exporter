@@ -1,0 +1,870 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Dashboard profissional para monitoramento de servidores IIS com métricas coletadas via OpenTelemetry e armazenadas no Grafana Mimir.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["iis", "windows", "otel", "mimir"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "definition": "label_values(iis_worker_cpu_percent, host_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Host",
+        "multi": true,
+        "name": "host_name",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(iis_worker_cpu_percent, host_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "IIS - Visão Geral (OTel / Mimir)",
+  "uid": "iis-otel-overview",
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "type": "row",
+      "id": 100,
+      "title": "Visão Geral",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 101,
+      "title": "Estado do Application Pool",
+      "description": "Estado atual de cada Application Pool. Valores típicos: 1=Starting, 2=Started, 3=Stopping, 4=Stopped, 5=Unknown.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "Starting", "color": "yellow" } } },
+            { "type": "value", "options": { "2": { "text": "Started", "color": "green" } } },
+            { "type": "value", "options": { "3": { "text": "Stopping", "color": "orange" } } },
+            { "type": "value", "options": { "4": { "text": "Stopped", "color": "red" } } },
+            { "type": "value", "options": { "5": { "text": "Unknown", "color": "purple" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "iis_apppool_state{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 102,
+      "title": "Uptime do Application Pool",
+      "description": "Tempo desde o último start de cada Application Pool.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 4, "x": 6, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 300 },
+              { "color": "green", "value": 3600 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "iis_apppool_uptime_seconds{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 103,
+      "title": "Conexões Atuais",
+      "description": "webservice_current_connections — soma de conexões ativas em todos os sites.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 4, "x": 10, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(webservice_current_connections{host_name=~\"$host_name\"})",
+          "legendFormat": "Conexões",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 104,
+      "title": "Requisições / s (ASP.NET App)",
+      "description": "Soma de aspnet_app_requests_per_sec_per_second em todas as aplicações do(s) host(s) selecionado(s).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 4, "x": 14, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(aspnet_app_requests_per_sec_per_second{host_name=~\"$host_name\"})",
+          "legendFormat": "req/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 105,
+      "title": "Erros Acumulados (ASP.NET App)",
+      "description": "Total acumulado de erros reportado por aspnet_app_errors_total.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 3, "x": 18, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(aspnet_app_errors_total{host_name=~\"$host_name\"})",
+          "legendFormat": "Erros",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 106,
+      "title": "Reciclagens do App Pool",
+      "description": "iis_apppool_recycles — total acumulado de reciclagens.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 5, "w": 3, "x": 21, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(iis_apppool_recycles{host_name=~\"$host_name\"})",
+          "legendFormat": "Reciclagens",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 200,
+      "title": "Fila de Requisições do IIS",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 201,
+      "title": "Tamanho da Fila",
+      "description": "iis_request_queue_size_requests — número de requisições aguardando na fila do kernel HTTP.sys.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_request_queue_size_requests{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 202,
+      "title": "Requisições Rejeitadas (Fila)",
+      "description": "iis_request_queue_rejected_requests — total de requisições rejeitadas pela fila (queue full).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "rate(iis_request_queue_rejected_requests{host_name=~\"$host_name\"}[5m])",
+          "legendFormat": "{{host_name}} (rate 5m)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 203,
+      "title": "Taxa de Chegada de Requisições",
+      "description": "iis_request_queue_arrival_rate_requests_per_second — taxa de novas requisições entrando na fila.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_request_queue_arrival_rate_requests_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 300,
+      "title": "ASP.NET - Requisições",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 301,
+      "title": "Requisições em Fila / Em Execução",
+      "description": "aspnet_requests_queued (em fila) e aspnet_app_requests_executing (em execução).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "aspnet_requests_queued{host_name=~\"$host_name\"}",
+          "legendFormat": "Queued - {{host_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "aspnet_app_requests_executing{host_name=~\"$host_name\"}",
+          "legendFormat": "Executing - {{host_name}}",
+          "refId": "B"
+        },
+        {
+          "expr": "aspnet_requests_current{host_name=~\"$host_name\"}",
+          "legendFormat": "Current - {{host_name}}",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 302,
+      "title": "Tempo de Espera de Requisição",
+      "description": "aspnet_request_wait_time_milliseconds — tempo que a última requisição esperou na fila do ASP.NET.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 2000 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "aspnet_request_wait_time_milliseconds{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 303,
+      "title": "Requisições por Aplicação (req/s)",
+      "description": "aspnet_app_requests_per_sec_per_second — taxa de requisições por aplicação ASP.NET.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10, "stacking": { "mode": "normal", "group": "A" } }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "aspnet_app_requests_per_sec_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 304,
+      "title": "Erros e Rejeitadas por App (taxa)",
+      "description": "Taxa por 5 minutos de aspnet_app_errors_total e aspnet_requests_rejected.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "rate(aspnet_app_errors_total{host_name=~\"$host_name\"}[5m])",
+          "legendFormat": "Erros - {{host_name}} / {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(aspnet_requests_rejected{host_name=~\"$host_name\"}[5m])",
+          "legendFormat": "Rejeitadas - {{host_name}}",
+          "refId": "B"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 400,
+      "title": "Worker Process (w3wp)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 401,
+      "title": "CPU por Worker",
+      "description": "iis_worker_cpu_percent — uso de CPU por worker process (instance = w3wp#N).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_worker_cpu_percent{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 402,
+      "title": "Memória Privada por Worker",
+      "description": "iis_worker_private_bytes — bytes privados (memória) consumidos por cada worker.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_worker_private_bytes{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 403,
+      "title": "Threads por Worker",
+      "description": "iis_worker_thread_count_threads — número de threads do processo w3wp.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 41 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_worker_thread_count_threads{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 404,
+      "title": "Handles por Worker",
+      "description": "iis_worker_handle_count_handles — handles abertos pelo processo w3wp (indicador de leaks).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 41 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "iis_worker_handle_count_handles{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 500,
+      "title": "Web Service - Conexões e Usuários",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 501,
+      "title": "Conexões Atuais",
+      "description": "webservice_current_connections — conexões ativas no momento.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 50 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_current_connections{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 502,
+      "title": "Tentativas de Conexão / s",
+      "description": "webservice_connection_attempts_per_second — taxa de tentativas de conexão.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 50 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_connection_attempts_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 503,
+      "title": "Total de Conexões (acumulado)",
+      "description": "webservice_total_connections — total acumulado desde o início.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 50 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_total_connections{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 504,
+      "title": "Usuários Anônimos Atuais",
+      "description": "webservice_current_anonymous_users — usuários anônimos conectados agora.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 58 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_current_anonymous_users{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 505,
+      "title": "Usuários Anônimos / s",
+      "description": "webservice_anonymous_users_per_second — taxa de novos usuários anônimos.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 58 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_anonymous_users_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 600,
+      "title": "Web Service - Requisições",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 601,
+      "title": "Requisições / s (Total)",
+      "description": "webservice_requests_per_sec_per_second — taxa total de requisições HTTP.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 67 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_requests_per_sec_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 602,
+      "title": "GET vs POST / s",
+      "description": "Comparação entre webservice_get_requests_per_sec_per_second e webservice_post_requests_per_sec_per_second.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 67 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_get_requests_per_sec_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "GET - {{host_name}} / {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "webservice_post_requests_per_sec_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "POST - {{host_name}} / {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 700,
+      "title": "Web Service - Throughput (Bytes)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 75 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 701,
+      "title": "Bytes Recebidos / s",
+      "description": "webservice_bytes_received_per_second — throughput de entrada.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 76 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_bytes_received_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 702,
+      "title": "Bytes Enviados / s",
+      "description": "webservice_bytes_sent_per_second — throughput de saída.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 76 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_bytes_sent_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 703,
+      "title": "Bytes Total / s",
+      "description": "webservice_bytes_total_per_second — soma de bytes (in + out).",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 76 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "expr": "webservice_bytes_total_per_second{host_name=~\"$host_name\"}",
+          "legendFormat": "{{host_name}} / {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 704,
+      "title": "Total de Bytes Recebidos (acumulado)",
+      "description": "webservice_total_bytes_received — total acumulado desde o início.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 84 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (host_name) (webservice_total_bytes_received{host_name=~\"$host_name\"})",
+          "legendFormat": "{{host_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 705,
+      "title": "Total de Bytes Enviados (acumulado)",
+      "description": "webservice_total_bytes_sent — total acumulado desde o início.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 84 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (host_name) (webservice_total_bytes_sent{host_name=~\"$host_name\"})",
+          "legendFormat": "{{host_name}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
