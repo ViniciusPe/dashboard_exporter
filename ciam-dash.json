@@ -232,7 +232,7 @@
       "pluginVersion": "10.4.0",
       "targets": [
         {
-          "expr": "max by(host_name, systemd_unit_name) (last_over_time(systemd_unit_state{host_name=~\"$host_name\", systemd_unit_name=~\"pingaccess.service|pingfederate.service|pingauthorize.service|ping-directory.service|pingdirectoryproxy.service\", systemd_unit_active_state=\"active\"}[24h]))",
+          "expr": "max by(host_name, systemd_unit_name) (last_over_time(systemd_unit_state{host_name=~\"$host_name\", systemd_unit_name=~\"pingaccess.service|pingfederate.service|pingauthorize.service|ping-directory.service|pingdirectoryproxy.service\", systemd_unit_active_state=\"active\"}[5m])) or (0 * max by(host_name, systemd_unit_name) (last_over_time(systemd_unit_state{host_name=~\"$host_name\", systemd_unit_name=~\"pingaccess.service|pingfederate.service|pingauthorize.service|ping-directory.service|pingdirectoryproxy.service\", systemd_unit_active_state=\"active\"}[24h])))",
           "legendFormat": "{{host_name}} / {{systemd_unit_name}}",
           "instant": true,
           "refId": "A"
