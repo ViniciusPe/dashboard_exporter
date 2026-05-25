@@ -53,7 +53,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "1 - ( sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m])) / clamp_min(sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\"}[5m])),1) )"
+          "expr": "1 - ( (sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m])) or vector(0)) / clamp_min(sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\"}[5m])),1) )"
         }
       ]
     },
@@ -81,7 +81,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode=\"429\"}[5m])) / clamp_min(sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\"}[5m])),1)"
+          "expr": "(sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode=\"429\"}[5m])) or vector(0)) / clamp_min(sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\"}[5m])),1)"
         }
       ]
     },
@@ -97,7 +97,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m]))"
+          "expr": "sum(rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m])) or vector(0)"
         }
       ]
     },
@@ -272,7 +272,7 @@
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "targets": [
         { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
-          "expr":"sum by (Operation) (rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode=\"429\"}[5m]))","legendFormat":"{{Operation}}"}
+          "expr":"sum by (Operation) (rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode=\"429\"}[5m])) or on() vector(0)","legendFormat":"{{Operation}}"}
       ]
     },
     {
@@ -284,7 +284,7 @@
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "targets": [
         { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
-          "expr":"sum by (Operation, OperationStatusCode) (rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m]))","legendFormat":"{{Operation}} - {{OperationStatusCode}}"}
+          "expr":"sum by (Operation, OperationStatusCode) (rate(cosmos_client_op_calls_total{k8s_cluster_name=~\"$cluster\",service_name=~\"$service\",OperationStatusCode!~\"2..\"}[5m])) or on() vector(0)","legendFormat":"{{Operation}} - {{OperationStatusCode}}"}
       ]
     },
 
