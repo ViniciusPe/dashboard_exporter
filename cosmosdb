@@ -1,0 +1,510 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Dashboard CosmosDB (Java SDK / OpenTelemetry) - métricas via Mimir. Cobre RU/s, Latências (Server/Client), Throttling, Erros, Disponibilidade, Payloads, RNTBD channels e Sistema (CPU/Mem).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "row",
+      "id": 1000,
+      "title": "Visão Geral (SRE / SLO)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "id": 1,
+      "title": "Availability (sucesso/total) - 5m",
+      "description": "Aproximação de Availability: 1 - (erros/total). Erros considerados pelo label status_code != 2xx.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0, "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.99 },
+              { "color": "green", "value": 0.995 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "1 - ( sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\",status_code!~\"2..\"}[5m])) / sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])) )"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "Throttled Requests (429) - % req",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.01 },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\",status_code=\"429\"}[5m])) / clamp_min(sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])),1)"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 3,
+      "title": "Total Errors rate (5m)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "thresholds": { "mode": "absolute", "steps": [ {"color":"green","value":null}, {"color":"orange","value":0.1}, {"color":"red","value":1} ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\",status_code!~\"2..\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 4,
+      "title": "Total Ops rate (5m)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode":"area" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1001,
+      "title": "Latências (db.cosmos.operation.duration / ServerSide / ClientSide)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }
+    },
+    {
+      "type": "timeseries",
+      "id": 10,
+      "title": "Client-Side Latency (op) - P50 / P95 / P99",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "lineWidth": 2 },
+        "thresholds": { "mode":"absolute", "steps":[ {"color":"green","value":null}, {"color":"orange","value":0.020}, {"color":"red","value":0.060} ] } } },
+      "options": { "legend": { "displayMode":"table","placement":"bottom","calcs":["lastNotNull","max"] } },
+      "targets": [
+        { "refId":"P50","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.50, sum by (le) (rate(cosmos_client_op_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P50"},
+        { "refId":"P95","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_op_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P95"},
+        { "refId":"P99","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.99, sum by (le) (rate(cosmos_client_op_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P99"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 11,
+      "title": "Server-Side Latency (RNTBD backend) - P50 / P95 / P99",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle":"line","lineWidth":2 },
+        "thresholds": { "mode":"absolute", "steps":[ {"color":"green","value":null}, {"color":"orange","value":15}, {"color":"red","value":50} ] } } },
+      "options": { "legend": { "displayMode":"table","placement":"bottom","calcs":["lastNotNull","max"] } },
+      "targets": [
+        { "refId":"P50","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.50, sum by (le) (rate(cosmos_client_req_rntbd_backendLatency_milliseconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P50"},
+        { "refId":"P95","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_backendLatency_milliseconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P95"},
+        { "refId":"P99","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.99, sum by (le) (rate(cosmos_client_req_rntbd_backendLatency_milliseconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P99"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 12,
+      "title": "Latência por Operação (P95) - op",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le, operation) (rate(cosmos_client_op_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"{{operation}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 13,
+      "title": "Latência Gateway (req_gw) - P95",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_gw_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"gw P95"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1002,
+      "title": "Request Units (db.cosmos.operation.rus)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }
+    },
+    {
+      "type": "timeseries",
+      "id": 20,
+      "title": "RU/s por operação (op) - rate(sum)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 27 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum by (operation) (rate(cosmos_client_op_RUs_RU_request_unit__sum{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"{{operation}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 21,
+      "title": "RU por requisição (P95)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 27 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le, operation) (rate(cosmos_client_op_RUs_RU_request_unit__bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"{{operation}} P95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 22,
+      "title": "Max RU por operação",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 36 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"max by (operation) (cosmos_client_op_RUs_max_RU_request_unit_{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"{{operation}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 23,
+      "title": "RU/s RNTBD vs Gateway (sum rate)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 36 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId":"R","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(rate(cosmos_client_req_rntbd_RUs_RU_request_unit__sum{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"RNTBD"},
+        { "refId":"G","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(rate(cosmos_client_req_gw_RUs_RU_request_unit__sum{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"Gateway"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1003,
+      "title": "Erros / Throttling / Status",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 }
+    },
+    {
+      "type": "timeseries",
+      "id": 30,
+      "title": "Calls por status_code (rate)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 46 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum by (status_code) (rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"{{status_code}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 31,
+      "title": "Throttled (429) por operação",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 46 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum by (operation) (rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\",status_code=\"429\"}[5m]))","legendFormat":"{{operation}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 32,
+      "title": "Erros (status != 2xx) por operação",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 55 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum by (operation, status_code) (rate(cosmos_client_op_calls_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\",status_code!~\"2..\"}[5m]))","legendFormat":"{{operation}} - {{status_code}}"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1004,
+      "title": "RNTBD Channels / Concurrency / Retries",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 64 }
+    },
+    {
+      "type": "timeseries",
+      "id": 40,
+      "title": "RNTBD Channels (acquired / available / closed)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 65 },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(rate(cosmos_client_rntbd_channels_acquired_count_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"acquired/s"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(cosmos_client_rntbd_channels_available_count{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"available"},
+        { "refId":"C","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(rate(cosmos_client_rntbd_channels_closed_count_total{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m]))","legendFormat":"closed/s"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 41,
+      "title": "RNTBD Requests - concurrent / queued",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 65 },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(cosmos_client_rntbd_requests_concurrent_count{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"concurrent"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"sum(cosmos_client_rntbd_requests_queued_count{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"queued"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 42,
+      "title": "RNTBD Latency P95 (sucesso vs total)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 74 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_rntbd_requests_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"all P95"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_rntbd_requests_successful_latency_seconds_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"successful P95"}
+      ]
+    },
+    {
+      "type": "stat",
+      "id": 43,
+      "title": "RNTBD Failed latency MAX",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 74 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["max"] }, "colorMode":"value" },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"max(cosmos_client_rntbd_requests_failed_latency_max_seconds{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"failed max"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1005,
+      "title": "Payloads (request/response sizes)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 }
+    },
+    {
+      "type": "timeseries",
+      "id": 50,
+      "title": "Request Payload Size (P95)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 84 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_reqPayloadSize_bytes_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"req P95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 51,
+      "title": "Response Payload Size (P95)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 84 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rspPayloadSize_bytes_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"rsp P95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 52,
+      "title": "RNTBD wire sizes - req/rsp P95",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 93 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_rntbd_req_reqSize_bytes_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"rntbd req P95"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_rntbd_req_rspSize_bytes_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"rntbd rsp P95"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1006,
+      "title": "Item counts / Bulk",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 102 }
+    },
+    {
+      "type": "timeseries",
+      "id": 60,
+      "title": "actualItemCount P95 (gw / rntbd)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 103 },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_gw_actualItemCount_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"gw P95"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_actualItemCount_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"rntbd P95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 61,
+      "title": "Bulk - GlobalOpCount / OpCountPerEvaluation / Retried (P95)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 103 },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_bulkGlobalOpCount_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"GlobalOpCount P95"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_bulkOpCountPerEvaluation_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"OpPerEval P95"},
+        { "refId":"C","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_bulkOpRetriedCountPerEvaluation_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"Retried P95"},
+        { "refId":"D","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_req_rntbd_bulkTargetMaxMicroBatchSize_item_count_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"TargetMicroBatch P95"}
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1007,
+      "title": "Sistema (CPU / Memória do client)",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 112 }
+    },
+    {
+      "type": "timeseries",
+      "id": 70,
+      "title": "CPU Load (% avg) - max e P95",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 113 },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"max by (k8s_pod_name) (cosmos_client_system_avgCpuLoad_max_percent{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"{{k8s_pod_name}} max"},
+        { "refId":"B","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"histogram_quantile(0.95, sum by (le) (rate(cosmos_client_system_avgCpuLoad_percent_bucket{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"}[5m])))","legendFormat":"P95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 71,
+      "title": "Free Memory Available (MB)",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 113 },
+      "fieldConfig": { "defaults": { "unit": "decmbytes" } },
+      "targets": [
+        { "refId":"A","datasource":{"type":"prometheus","uid":"af3dgaujkxssge"},
+          "expr":"min by (k8s_pod_name) (cosmos_client_system_freeMemoryAvailable_max_MB{service_name=~\"$service\",k8s_namespace_name=~\"$namespace\"})","legendFormat":"{{k8s_pod_name}}"}
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["cosmosdb", "azure", "opentelemetry", "mimir"],
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "query": { "qryType": 1, "query": "label_values(cosmos_client_op_calls_total, k8s_namespace_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "includeAll": true, "multi": true, "allValue": ".*", "current": { "selected": true, "text": ["All"], "value": ["$__all"] }, "refresh": 1, "sort": 1
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "query": { "qryType": 1, "query": "label_values(cosmos_client_op_calls_total{k8s_namespace_name=~\"$namespace\"}, service_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "includeAll": true, "multi": true, "allValue": ".*", "current": { "selected": true, "text": ["All"], "value": ["$__all"] }, "refresh": 1, "sort": 1
+      },
+      {
+        "name": "pod",
+        "label": "Pod",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+        "query": { "qryType": 1, "query": "label_values(cosmos_client_op_calls_total{service_name=~\"$service\"}, k8s_pod_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "includeAll": true, "multi": true, "allValue": ".*", "refresh": 1, "sort": 1
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "CosmosDB - Java SDK (OpenTelemetry / Mimir)",
+  "uid": "cosmosdb-otel-mimir",
+  "version": 1,
+  "weekStart": ""
+}
