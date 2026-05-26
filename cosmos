@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Dashboard CosmosDB (Azure Monitor -> OpenTelemetry -> Mimir). Cobre RU/s, Latências (Server/Gateway), Throttling, Erros, Disponibilidade, Storage, Documentos, Partições. Filtros hierárquicos: subscription -> resource_group -> account -> database -> collection.",
+  "description": "CosmosDB (Azure Monitor -> OpenTelemetry -> Mimir). Filtro: name (account).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -30,8 +30,8 @@
     {
       "type": "stat",
       "id": 1,
-      "title": "Availability (5m) — 1 - (erros/total)",
-      "description": "1 - (totalrequests StatusCode!~\"2..\" / totalrequests). Alerta: Warning <99.5% / Critical <99%.",
+      "title": "Availability (5m)",
+      "description": "1 - (totalrequests StatusCode!~\"2..\" / totalrequests). Warning <99.5% / Critical <99%.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
       "fieldConfig": {
@@ -51,18 +51,15 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "1 - ( (sum(rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",StatusCode!~\"2..\"}[5m])) or vector(0)) / clamp_min(sum(rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m])),1) )"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "1 - ( (sum(rate(azure_totalrequests_count_Count{name=~\"$name\",StatusCode!~\"2..\"}[5m])) or vector(0)) / clamp_min(sum(rate(azure_totalrequests_count_Count{name=~\"$name\"}[5m])),1) )" }
       ]
     },
     {
       "type": "stat",
       "id": 2,
-      "title": "Throttled Requests (429) — % req (5m)",
-      "description": "Alerta: Warning >1% / Critical >5%.",
+      "title": "Throttled (429) — % req",
+      "description": "Warning >1% / Critical >5%.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
       "fieldConfig": {
@@ -80,18 +77,15 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "(sum(rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",StatusCode=\"429\"}[5m])) or vector(0)) / clamp_min(sum(rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m])),1)"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "(sum(rate(azure_totalrequests_count_Count{name=~\"$name\",StatusCode=\"429\"}[5m])) or vector(0)) / clamp_min(sum(rate(azure_totalrequests_count_Count{name=~\"$name\"}[5m])),1)" }
       ]
     },
     {
       "type": "stat",
       "id": 3,
       "title": "Normalized RU Consumption (max)",
-      "description": "Alerta: Warning >70% / Critical >90%.",
+      "description": "Warning >70% / Critical >90%.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
       "fieldConfig": {
@@ -111,18 +105,15 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_normalizedruconsumption_maximum_Percent{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "max(azure_normalizedruconsumption_maximum_Percent{name=~\"$name\"})" }
       ]
     },
     {
       "type": "stat",
       "id": 4,
       "title": "Server-Side Latency (max ms)",
-      "description": "Alerta: Warning >15ms / Critical >50ms.",
+      "description": "Warning >15ms / Critical >50ms.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
       "fieldConfig": {
@@ -140,11 +131,8 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_serversidelatency_maximum_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "max(azure_serversidelatency_maximum_MilliSeconds{name=~\"$name\"})" }
       ]
     },
     {
@@ -156,11 +144,8 @@
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m]))"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(rate(azure_totalrequests_count_Count{name=~\"$name\"}[5m]))" }
       ]
     },
     {
@@ -172,11 +157,8 @@
       "fieldConfig": { "defaults": { "unit": "short" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_provisionedthroughput_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(azure_provisionedthroughput_maximum_Count{name=~\"$name\"})" }
       ]
     },
     {
@@ -188,11 +170,8 @@
       "fieldConfig": { "defaults": { "unit": "short" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_autoscalemaxthroughput_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "max(azure_autoscalemaxthroughput_maximum_Count{name=~\"$name\"})" }
       ]
     },
     {
@@ -204,11 +183,8 @@
       "fieldConfig": { "defaults": { "unit": "short" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
       "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_physicalpartitioncount_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})"
-        }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "max(azure_physicalpartitioncount_maximum_Count{name=~\"$name\"})" }
       ]
     },
 
@@ -222,23 +198,22 @@
     {
       "type": "timeseries",
       "id": 10,
-      "title": "Total Request Units (avg/max) - RU consumed",
+      "title": "Total Request Units (avg/max)",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 12 },
-      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "lineWidth": 2 } } },
+      "fieldConfig": { "defaults": { "unit": "short" } },
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_totalrequestunits_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "sum(azure_totalrequestunits_average_Count{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_totalrequestunits_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" }
+          "expr": "max(azure_totalrequestunits_maximum_Count{name=~\"$name\"})", "legendFormat": "max" }
       ]
     },
     {
       "type": "timeseries",
       "id": 11,
       "title": "Normalized RU Consumption (%) — avg/max",
-      "description": "Alerta: Warning >70% / Critical >90%.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 12 },
       "fieldConfig": {
@@ -246,7 +221,6 @@
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "custom": { "drawStyle": "line", "lineWidth": 2 },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -260,21 +234,21 @@
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_normalizedruconsumption_average_Percent{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "max(azure_normalizedruconsumption_average_Percent{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_normalizedruconsumption_maximum_Percent{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" }
+          "expr": "max(azure_normalizedruconsumption_maximum_Percent{name=~\"$name\"})", "legendFormat": "max" }
       ]
     },
     {
       "type": "timeseries",
       "id": 12,
-      "title": "RU/s por Collection (avg)",
+      "title": "RU consumido por Database/Collection (avg)",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 21 },
       "fieldConfig": { "defaults": { "unit": "short" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_totalrequestunits_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_totalrequestunits_average_Count{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
       ]
     },
     {
@@ -286,9 +260,9 @@
       "fieldConfig": { "defaults": { "unit": "short" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_provisionedthroughput_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} provisioned" },
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_provisionedthroughput_maximum_Count{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} provisioned" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_autoscalemaxthroughput_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} autoscale max" }
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_autoscalemaxthroughput_maximum_Count{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} autoscale max" }
       ]
     },
 
@@ -302,14 +276,13 @@
     {
       "type": "timeseries",
       "id": 20,
-      "title": "Server-Side Latency (ms) — avg / max",
+      "title": "Server-Side Latency (ms) — avg/max/min",
       "description": "Alerta sobre max: Warning >15ms / Critical >50ms.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 31 },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "drawStyle": "line", "lineWidth": 2 },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -323,39 +296,39 @@
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg(azure_serversidelatency_average_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "avg(azure_serversidelatency_average_MilliSeconds{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_serversidelatency_maximum_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" },
+          "expr": "max(azure_serversidelatency_maximum_MilliSeconds{name=~\"$name\"})", "legendFormat": "max" },
         { "refId": "C", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "min(azure_serversidelatency_minimum_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "min" }
+          "expr": "min(azure_serversidelatency_minimum_MilliSeconds{name=~\"$name\"})", "legendFormat": "min" }
       ]
     },
     {
       "type": "timeseries",
       "id": 21,
-      "title": "Server-Side Latency Gateway (ms) — avg / max",
+      "title": "Server-Side Latency Gateway (ms) — avg/max/min",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 31 },
       "fieldConfig": { "defaults": { "unit": "ms" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg(azure_serversidelatencygateway_average_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "avg(azure_serversidelatencygateway_average_MilliSeconds{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_serversidelatencygateway_maximum_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" },
+          "expr": "max(azure_serversidelatencygateway_maximum_MilliSeconds{name=~\"$name\"})", "legendFormat": "max" },
         { "refId": "C", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "min(azure_serversidelatencygateway_minimum_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "min" }
+          "expr": "min(azure_serversidelatencygateway_minimum_MilliSeconds{name=~\"$name\"})", "legendFormat": "min" }
       ]
     },
     {
       "type": "timeseries",
       "id": 22,
-      "title": "Server-Side Latency por Collection (avg ms)",
+      "title": "Server-Side Latency por Database/Collection (avg ms)",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 24, "x": 0, "y": 40 },
       "fieldConfig": { "defaults": { "unit": "ms" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg by (metadata_databasename, metadata_collectionname) (azure_serversidelatency_average_MilliSeconds{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+          "expr": "avg by (metadata_databasename, metadata_collectionname) (azure_serversidelatency_average_MilliSeconds{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
       ]
     },
 
@@ -375,19 +348,19 @@
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (StatusCode) (rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m]))", "legendFormat": "{{StatusCode}}" }
+          "expr": "sum by (StatusCode) (rate(azure_totalrequests_count_Count{name=~\"$name\"}[5m]))", "legendFormat": "{{StatusCode}}" }
       ]
     },
     {
       "type": "timeseries",
       "id": 31,
-      "title": "Throttled (429) por Collection",
+      "title": "Throttled (429) por Database/Collection",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 50 },
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",StatusCode=\"429\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"}[5m])) or on() vector(0)", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (rate(azure_totalrequests_count_Count{name=~\"$name\",StatusCode=\"429\"}[5m])) or on() vector(0)", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
       ]
     },
     {
@@ -399,86 +372,38 @@
       "fieldConfig": { "defaults": { "unit": "reqps" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (OperationType, StatusCode) (rate(azure_totalrequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",StatusCode!~\"2..\"}[5m])) or on() vector(0)", "legendFormat": "{{OperationType}} - {{StatusCode}}" }
+          "expr": "sum by (OperationType, StatusCode) (rate(azure_totalrequests_count_Count{name=~\"$name\",StatusCode!~\"2..\"}[5m])) or on() vector(0)", "legendFormat": "{{OperationType}} - {{StatusCode}}" }
       ]
     },
 
     {
       "type": "row",
       "id": 1004,
-      "title": "Mongo API (se aplicável)",
-      "collapsed": true,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 68 },
-      "panels": [
-        {
-          "type": "timeseries",
-          "id": 40,
-          "title": "Mongo Requests rate",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 69 },
-          "fieldConfig": { "defaults": { "unit": "reqps" } },
-          "targets": [
-            { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-              "expr": "sum by (CommandName, ErrorCode) (rate(azure_mongorequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m]))", "legendFormat": "{{CommandName}} - {{ErrorCode}}" }
-          ]
-        },
-        {
-          "type": "timeseries",
-          "id": 41,
-          "title": "Mongo Request Charge (RU avg/max)",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 69 },
-          "fieldConfig": { "defaults": { "unit": "short" } },
-          "targets": [
-            { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-              "expr": "avg(azure_mongorequestcharge_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
-            { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-              "expr": "max(azure_mongorequestcharge_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" }
-          ]
-        },
-        {
-          "type": "timeseries",
-          "id": 42,
-          "title": "Metadata Requests rate",
-          "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 78 },
-          "fieldConfig": { "defaults": { "unit": "reqps" } },
-          "targets": [
-            { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-              "expr": "sum by (StatusCode) (rate(azure_metadatarequests_count_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}[5m]))", "legendFormat": "{{StatusCode}}" }
-          ]
-        }
-      ]
-    },
-
-    {
-      "type": "row",
-      "id": 1005,
       "title": "Armazenamento / Quota",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 69 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 68 }
     },
     {
       "type": "timeseries",
-      "id": 50,
+      "id": 40,
       "title": "Data Usage (bytes) — avg/max",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 70 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 69 },
       "fieldConfig": { "defaults": { "unit": "bytes" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_datausage_average_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "sum(azure_datausage_average_Bytes{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_datausage_maximum_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" }
+          "expr": "max(azure_datausage_maximum_Bytes{name=~\"$name\"})", "legendFormat": "max" }
       ]
     },
     {
       "type": "stat",
-      "id": 51,
+      "id": 41,
       "title": "Data Usage % do Quota",
-      "description": "Alerta: Warning >80% / Critical >90%.",
+      "description": "Warning >80% / Critical >90%.",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 6, "x": 12, "y": 70 },
+      "gridPos": { "h": 9, "w": 6, "x": 12, "y": 69 },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -497,119 +422,119 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_datausage_total_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}) / clamp_min(sum(azure_documentquota_total_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"}),1)" }
+          "expr": "sum(azure_datausage_total_Bytes{name=~\"$name\"}) / clamp_min(sum(azure_documentquota_total_Bytes{name=~\"$name\"}),1)" }
       ]
     },
     {
       "type": "stat",
-      "id": 52,
+      "id": 42,
       "title": "Available Storage",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 6, "x": 18, "y": 70 },
+      "gridPos": { "h": 9, "w": 6, "x": 18, "y": 69 },
       "fieldConfig": { "defaults": { "unit": "bytes" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_availablestorage_total_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})" }
+          "expr": "sum(azure_availablestorage_total_Bytes{name=~\"$name\"})" }
       ]
     },
     {
       "type": "timeseries",
-      "id": 53,
+      "id": 43,
       "title": "Index Usage (bytes) — avg/max",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 79 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 78 },
       "fieldConfig": { "defaults": { "unit": "bytes" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_indexusage_average_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "avg" },
+          "expr": "sum(azure_indexusage_average_Bytes{name=~\"$name\"})", "legendFormat": "avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max(azure_indexusage_maximum_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "max" }
+          "expr": "max(azure_indexusage_maximum_Bytes{name=~\"$name\"})", "legendFormat": "max" }
       ]
     },
     {
       "type": "timeseries",
-      "id": 54,
-      "title": "Data Usage por Collection",
+      "id": 44,
+      "title": "Data Usage por Database/Collection",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 79 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 78 },
       "fieldConfig": { "defaults": { "unit": "bytes" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_datausage_total_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_datausage_total_Bytes{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+      ]
+    },
+
+    {
+      "type": "row",
+      "id": 1005,
+      "title": "Documentos",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 87 }
+    },
+    {
+      "type": "timeseries",
+      "id": 50,
+      "title": "Document Count total (avg) com baseline 7d",
+      "description": "Crescimento: Warning > baseline + 30% / Critical > baseline + 50%.",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 88 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum(azure_documentcount_average_Count{name=~\"$name\"})", "legendFormat": "current" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$name\"})[7d:1h])", "legendFormat": "baseline 7d" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$name\"})[7d:1h]) * 1.3", "legendFormat": "warn (+30%)" },
+        { "refId": "D", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$name\"})[7d:1h]) * 1.5", "legendFormat": "crit (+50%)" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 51,
+      "title": "Document Count por Database/Collection",
+      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 88 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
+          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_documentcount_average_Count{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
       ]
     },
 
     {
       "type": "row",
       "id": 1006,
-      "title": "Documentos",
+      "title": "Partições Físicas",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 88 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 97 }
     },
     {
       "type": "timeseries",
       "id": 60,
-      "title": "Document Count total (avg)",
-      "description": "Alerta de crescimento: Warning > baseline + 30% / Critical > baseline + 50%.",
+      "title": "Physical Partition Size (bytes) — avg/max",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 89 },
-      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 98 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum(azure_documentcount_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})", "legendFormat": "current" },
+          "expr": "avg by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionsizeinfo_average_Bytes{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} avg" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})[7d:1h])", "legendFormat": "baseline 7d" },
-        { "refId": "C", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})[7d:1h]) * 1.3", "legendFormat": "warn (+30%)" },
-        { "refId": "D", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg_over_time(sum(azure_documentcount_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\"})[7d:1h]) * 1.5", "legendFormat": "crit (+50%)" }
+          "expr": "max by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionsizeinfo_maximum_Bytes{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} max" }
       ]
     },
     {
       "type": "timeseries",
       "id": 61,
-      "title": "Document Count por Collection",
-      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 89 },
-      "fieldConfig": { "defaults": { "unit": "short" } },
-      "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "sum by (metadata_databasename, metadata_collectionname) (azure_documentcount_average_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
-      ]
-    },
-
-    {
-      "type": "row",
-      "id": 1007,
-      "title": "Partições Físicas",
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 98 }
-    },
-    {
-      "type": "timeseries",
-      "id": 70,
-      "title": "Physical Partition Size (bytes) — avg/max",
-      "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 99 },
-      "fieldConfig": { "defaults": { "unit": "bytes" } },
-      "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "avg by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionsizeinfo_average_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} avg" },
-        { "refId": "B", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionsizeinfo_maximum_Bytes{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}} max" }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "id": 71,
       "title": "Physical Partition Throughput (RU/s)",
       "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 99 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 98 },
       "fieldConfig": { "defaults": { "unit": "short" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-          "expr": "max by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionthroughputinfo_maximum_Count{name=~\"$account\",resource_group=~\"$resource_group\",azuremonitor_subscription_id=~\"$subscription\",metadata_databasename=~\"$database\",metadata_collectionname=~\"$collection\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
+          "expr": "max by (metadata_databasename, metadata_collectionname) (azure_physicalpartitionthroughputinfo_maximum_Count{name=~\"$name\"})", "legendFormat": "{{metadata_databasename}}/{{metadata_collectionname}}" }
       ]
     }
   ],
@@ -619,49 +544,13 @@
   "templating": {
     "list": [
       {
-        "name": "subscription",
-        "label": "Subscription",
+        "name": "name",
+        "label": "Account",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-        "definition": "label_values(azure_totalrequests_count_Count, azuremonitor_subscription_id)",
-        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count, azuremonitor_subscription_id)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "definition": "label_values(azure_totalrequests_count_Count, name)",
+        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count, name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
         "includeAll": true, "multi": true, "allValue": ".+", "refresh": 1, "sort": 1
-      },
-      {
-        "name": "resource_group",
-        "label": "Resource Group",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-        "definition": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\"}, resource_group)",
-        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\"}, resource_group)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "includeAll": true, "multi": true, "allValue": ".+", "refresh": 2, "sort": 1
-      },
-      {
-        "name": "account",
-        "label": "Account (name)",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-        "definition": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\"}, name)",
-        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\"}, name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "includeAll": true, "multi": true, "allValue": ".+", "refresh": 2, "sort": 1
-      },
-      {
-        "name": "database",
-        "label": "Database",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-        "definition": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\",name=~\"$account\"}, metadata_databasename)",
-        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\",name=~\"$account\"}, metadata_databasename)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "includeAll": true, "multi": true, "allValue": ".+", "refresh": 2, "sort": 1
-      },
-      {
-        "name": "collection",
-        "label": "Collection",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "af3dgaujkxssge" },
-        "definition": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\",name=~\"$account\",metadata_databasename=~\"$database\"}, metadata_collectionname)",
-        "query": { "qryType": 1, "query": "label_values(azure_totalrequests_count_Count{azuremonitor_subscription_id=~\"$subscription\",resource_group=~\"$resource_group\",name=~\"$account\",metadata_databasename=~\"$database\"}, metadata_collectionname)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "includeAll": true, "multi": true, "allValue": ".+", "refresh": 2, "sort": 1
       }
     ]
   },
@@ -670,6 +559,6 @@
   "timezone": "browser",
   "title": "CosmosDB - Azure Monitor (OpenTelemetry / Mimir)",
   "uid": "cosmosdb-azmon-mimir",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
