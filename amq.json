@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Dashboard de monitoramento AMQ Streams (Red Hat) - MÃ©tricas coletadas via OpenTelemetry",
+  "description": "Dashboard de monitoramento AMQ Streams (Red Hat) - Métricas coletadas via OpenTelemetry",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -27,7 +27,7 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
       "panels": [],
-      "title": "ðŸŸ¢ Overview",
+      "title": "🟢 Overview",
       "type": "row"
     },
     {
@@ -170,7 +170,7 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "title": "Total TÃ³picos",
+      "title": "Total Tópicos",
       "type": "stat",
       "targets": [
         {
@@ -209,7 +209,7 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "title": "RÃ©plicas In-Sync (Min)",
+      "title": "Réplicas In-Sync (Min)",
       "type": "stat",
       "targets": [
         {
@@ -246,7 +246,7 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "title": "Total PartiÃ§Ãµes",
+      "title": "Total Partições",
       "type": "stat",
       "targets": [
         {
@@ -506,7 +506,7 @@
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "PartiÃ§Ãµes por TÃ³pico",
+      "title": "Partições por Tópico",
       "type": "timeseries",
       "targets": [
         {
@@ -559,7 +559,7 @@
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Replication Factor por TÃ³pico",
+      "title": "Replication Factor por Tópico",
       "type": "timeseries",
       "targets": [
         {
@@ -612,7 +612,7 @@
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Min In-Sync Replicas por TÃ³pico",
+      "title": "Min In-Sync Replicas por Tópico",
       "type": "timeseries",
       "targets": [
         {
@@ -666,7 +666,7 @@
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Log Retention Period por TÃ³pico",
+      "title": "Log Retention Period por Tópico",
       "type": "timeseries",
       "targets": [
         {
@@ -720,7 +720,7 @@
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Log Retention Size por TÃ³pico",
+      "title": "Log Retention Size por Tópico",
       "type": "timeseries",
       "targets": [
         {
