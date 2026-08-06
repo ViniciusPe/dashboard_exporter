@@ -1,0 +1,433 @@
+{
+  "uid": "dqs-ranking",
+  "title": "🏆 DQS - Dashboard Quality Score - Ranking",
+  "description": "Ranking e visão consolidada da qualidade dos dashboards do Grafana, avaliados automaticamente pelo DQS.",
+  "tags": ["dqs", "quality", "ranking", "governanca"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-6h", "to": "now" },
+  "graphTooltip": 1,
+  "style": "dark",
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Prometheus / Thanos",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "🏆 Score Geral da Instância",
+      "description": "Média ponderada do DQS de todos os dashboards avaliados",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "dqs_instance_avg_score",
+          "legendFormat": "Score Médio",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "📊 Total de Dashboards Avaliados",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "dqs_dashboards_total",
+          "legendFormat": "Total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#5794F2", "value": null }] }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "⚠️ Abaixo do Threshold (< 70)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "dqs_dashboards_below_threshold{threshold=\"70\"}",
+          "legendFormat": "Below Threshold",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#73BF69", "value": null },
+              { "color": "#FADE2A", "value": 3 },
+              { "color": "#FF9830", "value": 5 },
+              { "color": "#F2495C", "value": 10 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "🕒 Última Avaliação",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "dqs_last_evaluation_timestamp",
+          "legendFormat": "Timestamp",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#5794F2", "value": null }] }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "📈 Evolução do Score Médio",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "dqs_instance_avg_score",
+          "legendFormat": "Score Médio da Instância",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "calcs": ["mean", "last", "min", "max"] }
+      }
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "🚨 Precisam de Atenção (Top 10 menores scores)",
+      "description": "Os 10 dashboards com pior Dashboard Quality Score no momento",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "bottomk(10, dqs_dashboard_score)",
+          "legendFormat": "{{title}} ({{folder}})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "transformations": [
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Value", "desc": false }] } }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "📋 Ranking Completo",
+      "description": "Todos os dashboards avaliados, ordenados por Dashboard Quality Score",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 13, "w": 24, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sort_desc(dqs_dashboard_score)",
+          "legendFormat": "{{title}}",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": { "align": "center", "cellOptions": { "type": "auto" }, "filterable": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Score" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#F2495C", "value": null },
+                    { "color": "#FF9830", "value": 30 },
+                    { "color": "#FADE2A", "value": 50 },
+                    { "color": "#5794F2", "value": 70 },
+                    { "color": "#73BF69", "value": 90 }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "custom.align", "value": "center" },
+              { "id": "decimals", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Faixa" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "basic" },
+              { "id": "custom.align", "value": "center" },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "range", "options": { "from": 90, "to": 100, "result": { "text": "🟢 Excelente" } } },
+                  { "type": "range", "options": { "from": 70, "to": 89.99, "result": { "text": "🔵 Bom" } } },
+                  { "type": "range", "options": { "from": 50, "to": 69.99, "result": { "text": "🟡 Regular" } } },
+                  { "type": "range", "options": { "from": 30, "to": 49.99, "result": { "text": "🟠 Ruim" } } },
+                  { "type": "range", "options": { "from": 0, "to": 29.99, "result": { "text": "🔴 Crítico" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Rank" },
+            "properties": [
+              { "id": "custom.align", "value": "center" },
+              { "id": "custom.width", "value": 70 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Dashboard" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  { "title": "Abrir dashboard", "url": "/d/${__data.fields.uid}", "targetBlank": false }
+                ]
+              },
+              { "id": "custom.cellOptions", "value": { "type": "auto", "wrapText": true } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Pasta" },
+            "properties": [
+              { "id": "custom.align", "value": "center" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "uid" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": { "show": true, "reducer": ["mean"], "fields": ["Score"] },
+        "sortBy": [{ "displayName": "Score", "desc": true }]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true } } },
+        { "id": "calculateField", "options": { "mode": "index", "as": "Row" } },
+        {
+          "id": "calculateField",
+          "options": {
+            "mode": "binary",
+            "alias": "Faixa",
+            "binary": { "left": "Value", "operator": "+", "right": "0" },
+            "replaceFields": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "Row": "Rank", "title": "Dashboard", "folder": "Pasta", "Value": "Score" },
+            "indexByName": { "Rank": 0, "Dashboard": 1, "Pasta": 2, "Score": 3, "Faixa": 4, "uid": 5 }
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "bargauge",
+      "title": "📐 Score Médio por Dimensão",
+      "description": "Média de cada dimensão do DQS considerando todos os dashboards",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "avg by (dimension) (dqs_dimension_score)",
+          "legendFormat": "{{dimension}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "⏱️ Tempo de Avaliação",
+      "description": "Duração do ciclo de avaliação completo",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "rate(dqs_evaluation_duration_seconds_sum[$__rate_interval]) / rate(dqs_evaluation_duration_seconds_count[$__rate_interval])",
+          "legendFormat": "Duração média (s)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 20, "gradientMode": "scheme", "showPoints": "never" }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "calcs": ["mean", "max"] }
+      }
+    }
+  ]
+}
