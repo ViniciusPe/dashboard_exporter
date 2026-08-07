@@ -35,7 +35,7 @@
           "type": "json",
           "source": "url",
           "format": "table",
-          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats",
           "url_options": { "method": "GET" },
           "root_selector": "",
           "columns": [{ "selector": "instance_score", "text": "Score", "type": "number" }]
@@ -79,7 +79,7 @@
           "type": "json",
           "source": "url",
           "format": "table",
-          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats",
           "url_options": { "method": "GET" },
           "root_selector": "",
           "columns": [{ "selector": "total_dashboards", "text": "Total", "type": "number" }]
@@ -110,7 +110,7 @@
           "type": "json",
           "source": "url",
           "format": "table",
-          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats",
           "url_options": { "method": "GET" },
           "root_selector": "",
           "columns": [{ "selector": "below_threshold", "text": "Abaixo", "type": "number" }]
@@ -149,7 +149,7 @@
           "type": "json",
           "source": "url",
           "format": "table",
-          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats",
           "url_options": { "method": "GET" },
           "root_selector": "",
           "columns": [{ "selector": "evaluated_at", "text": "Evaluated At", "type": "timestamp" }]
