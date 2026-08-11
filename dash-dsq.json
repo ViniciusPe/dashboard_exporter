@@ -1,0 +1,296 @@
+{
+  "uid": "dqs-ranking-squad",
+  "title": "🏆 DQS - Ranking Squad Dashboards",
+  "description": "Ranking de qualidade dos dashboards do time squad-dashboards",
+  "tags": ["dqs", "quality", "ranking", "squad-dashboards"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "graphTooltip": 1,
+  "style": "dark",
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "yesoreyeram-infinity-datasource",
+        "label": "Infinity (REST API)",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "🏆 Score Geral do Squad",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "",
+          "columns": [{ "selector": "instance_score", "text": "Score", "type": "number" }]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "📊 Total de Dashboards",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "",
+          "columns": [{ "selector": "total_dashboards", "text": "Total", "type": "number" }]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#5794F2", "value": null }] }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "⚠️ Abaixo do Threshold",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "",
+          "columns": [{ "selector": "below_threshold", "text": "Abaixo", "type": "number" }]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#73BF69", "value": null },
+              { "color": "#FADE2A", "value": 3 },
+              { "color": "#FF9830", "value": 5 },
+              { "color": "#F2495C", "value": 10 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "🕒 Última Avaliação",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/stats?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "",
+          "columns": [{ "selector": "evaluated_at_ms", "text": "Evaluated At", "type": "number" }]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#5794F2", "value": null }] }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "🚨 Precisam de Atenção (menores scores do squad)",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "ranking",
+          "columns": [
+            { "selector": "title", "text": "Dashboard", "type": "string" },
+            { "selector": "folder", "text": "Pasta", "type": "string" },
+            { "selector": "score", "text": "Score", "type": "number" }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 30 },
+              { "color": "#FADE2A", "value": 50 },
+              { "color": "#5794F2", "value": 70 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/Score/" }
+      },
+      "transformations": [
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Score", "desc": false }] } },
+        { "id": "limit", "options": { "limitField": 10 } }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "📋 Ranking Completo do Squad",
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${datasource}" },
+      "gridPos": { "h": 13, "w": 24, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://dqs.nm-observ.svc.cluster.local:8000/api/v1/scores/ranking?tag=squad-dashboards",
+          "url_options": { "method": "GET" },
+          "root_selector": "ranking",
+          "columns": [
+            { "selector": "uid", "text": "uid", "type": "string" },
+            { "selector": "title", "text": "Dashboard", "type": "string" },
+            { "selector": "folder", "text": "Pasta", "type": "string" },
+            { "selector": "score", "text": "Score", "type": "number" },
+            { "selector": "label", "text": "Faixa", "type": "string" }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": { "align": "center", "cellOptions": { "type": "auto" }, "filterable": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Score" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#F2495C", "value": null },
+                    { "color": "#FF9830", "value": 30 },
+                    { "color": "#FADE2A", "value": 50 },
+                    { "color": "#5794F2", "value": 70 },
+                    { "color": "#73BF69", "value": 90 }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "custom.align", "value": "center" },
+              { "id": "decimals", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Dashboard" },
+            "properties": [
+              { "id": "links", "value": [{ "title": "Abrir dashboard", "url": "/d/${__data.fields.uid}", "targetBlank": false }] },
+              { "id": "custom.cellOptions", "value": { "type": "auto", "wrapText": true } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "uid" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": { "show": true, "reducer": ["mean"], "fields": ["Score"] },
+        "sortBy": [{ "displayName": "Score", "desc": true }]
+      }
+    }
+  ]
+}
